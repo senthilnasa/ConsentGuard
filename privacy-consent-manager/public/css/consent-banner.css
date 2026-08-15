@@ -1,0 +1,325 @@
+/**
+ * Privacy & Consent Manager — banner, modal and reopen button.
+ * Colors, font size and radius come from CSS custom properties injected
+ * from the design settings (see Frontend::banner_css_vars()).
+ */
+
+.pcm-banner,
+.pcm-overlay,
+.pcm-reopen {
+	--pcm-primary-fallback: #1a73e8;
+	box-sizing: border-box;
+	font-size: var(--pcm-font-size, 15px);
+	line-height: 1.5;
+	color: var(--pcm-text, #1f2937);
+	font-family: inherit;
+}
+
+.pcm-banner *,
+.pcm-overlay * {
+	box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------- banner */
+
+.pcm-banner {
+	position: fixed;
+	z-index: 99998;
+	background: var(--pcm-bg, #fff);
+	box-shadow: 0 -2px 24px rgba(0, 0, 0, 0.18);
+	padding: 20px;
+	display: none;
+	max-height: 90vh;
+	overflow-y: auto;
+}
+
+.pcm-banner.pcm-visible {
+	display: block;
+}
+
+.pcm-pos-bottom { left: 0; right: 0; bottom: 0; }
+.pcm-pos-top { left: 0; right: 0; top: 0; box-shadow: 0 2px 24px rgba(0, 0, 0, 0.18); }
+
+.pcm-pos-bottom-left,
+.pcm-pos-bottom-right,
+.pcm-pos-center {
+	max-width: 420px;
+	border-radius: var(--pcm-radius, 8px);
+	box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22);
+}
+
+.pcm-pos-bottom-left { left: 20px; bottom: 20px; }
+.pcm-pos-bottom-right { right: 20px; bottom: 20px; }
+.pcm-pos-center { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+
+.pcm-layout-box .pcm-banner-inner { max-width: 420px; }
+.pcm-layout-bar .pcm-banner-inner { max-width: 1080px; margin: 0 auto; }
+
+@media (prefers-reduced-motion: no-preference) {
+	.pcm-anim-slide.pcm-visible { animation: pcm-slide-up 0.3s ease-out; }
+	.pcm-anim-fade.pcm-visible { animation: pcm-fade-in 0.3s ease-out; }
+}
+
+@keyframes pcm-slide-up {
+	from { transform: translateY(24px); opacity: 0; }
+	to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pcm-fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+.pcm-title {
+	margin: 0 0 8px;
+	font-size: 1.15em;
+	font-weight: 700;
+	color: inherit;
+}
+
+.pcm-message {
+	margin: 0 0 12px;
+}
+
+.pcm-logo {
+	max-height: 32px;
+	width: auto;
+	margin-bottom: 8px;
+}
+
+.pcm-links {
+	margin: 0 0 12px;
+}
+
+.pcm-link {
+	color: var(--pcm-primary, var(--pcm-primary-fallback));
+	text-decoration: underline;
+	margin-right: 16px;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.pcm-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.pcm-btn {
+	font: inherit;
+	font-weight: 600;
+	padding: 10px 20px;
+	border-radius: var(--pcm-radius, 8px);
+	border: 1px solid transparent;
+	cursor: pointer;
+	min-height: 44px;
+}
+
+.pcm-btn:focus-visible {
+	outline: 3px solid var(--pcm-primary, var(--pcm-primary-fallback));
+	outline-offset: 2px;
+}
+
+.pcm-btn-primary {
+	background: var(--pcm-primary, var(--pcm-primary-fallback));
+	color: var(--pcm-btn-text, #fff);
+}
+
+.pcm-btn-secondary {
+	background: transparent;
+	color: var(--pcm-text, #1f2937);
+	border-color: currentColor;
+}
+
+.pcm-btn-tertiary {
+	background: transparent;
+	color: var(--pcm-primary, var(--pcm-primary-fallback));
+	text-decoration: underline;
+	border: none;
+}
+
+.pcm-close {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: transparent;
+	border: none;
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 8px;
+	color: inherit;
+}
+
+/* ---------------------------------------------------------------- modal */
+
+.pcm-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 99999;
+	background: rgba(0, 0, 0, 0.5);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+}
+
+.pcm-overlay.pcm-visible {
+	display: flex;
+}
+
+.pcm-modal {
+	position: relative;
+	background: var(--pcm-bg, #fff);
+	border-radius: var(--pcm-radius, 8px);
+	max-width: 560px;
+	width: 100%;
+	max-height: 85vh;
+	overflow-y: auto;
+	padding: 24px;
+	box-shadow: 0 8px 48px rgba(0, 0, 0, 0.3);
+}
+
+.pcm-category {
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+	padding: 14px 0;
+}
+
+.pcm-category-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.pcm-category-label {
+	font-weight: 700;
+}
+
+.pcm-category-desc {
+	margin: 6px 0 0;
+	opacity: 0.85;
+	font-size: 0.93em;
+}
+
+.pcm-always-active {
+	color: var(--pcm-primary, var(--pcm-primary-fallback));
+	font-weight: 600;
+	font-size: 0.9em;
+}
+
+.pcm-consent-id {
+	margin: 16px 0 0;
+	font-size: 0.8em;
+	opacity: 0.6;
+	word-break: break-all;
+}
+
+/* --------------------------------------------------------------- toggle */
+
+.pcm-toggle {
+	position: relative;
+	display: inline-block;
+	width: 46px;
+	height: 26px;
+	flex-shrink: 0;
+}
+
+.pcm-toggle input {
+	position: absolute;
+	opacity: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	cursor: pointer;
+}
+
+.pcm-slider {
+	position: absolute;
+	inset: 0;
+	background: #9ca3af;
+	border-radius: 26px;
+	transition: background 0.15s;
+	pointer-events: none;
+}
+
+.pcm-slider::before {
+	content: "";
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	left: 3px;
+	top: 3px;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform 0.15s;
+}
+
+.pcm-toggle input:checked + .pcm-slider {
+	background: var(--pcm-primary, var(--pcm-primary-fallback));
+}
+
+.pcm-toggle input:checked + .pcm-slider::before {
+	transform: translateX(20px);
+}
+
+.pcm-toggle input:focus-visible + .pcm-slider {
+	outline: 3px solid var(--pcm-primary, var(--pcm-primary-fallback));
+	outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------- reopen */
+
+.pcm-reopen {
+	position: fixed;
+	left: 16px;
+	bottom: 16px;
+	z-index: 99997;
+	background: var(--pcm-bg, #fff);
+	color: var(--pcm-text, #1f2937);
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: var(--pcm-radius, 8px);
+	padding: 8px 14px;
+	font-size: 0.85em;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pcm-reopen:focus-visible {
+	outline: 3px solid var(--pcm-primary, var(--pcm-primary-fallback));
+	outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------- mobile */
+
+@media (max-width: 600px) {
+	.pcm-pos-bottom-left,
+	.pcm-pos-bottom-right {
+		left: 8px;
+		right: 8px;
+		bottom: 8px;
+		max-width: none;
+	}
+
+	.pcm-pos-center {
+		left: 8px;
+		right: 8px;
+		top: auto;
+		bottom: 8px;
+		transform: none;
+		max-width: none;
+	}
+
+	.pcm-actions {
+		flex-direction: column;
+	}
+
+	.pcm-actions .pcm-btn {
+		width: 100%;
+	}
+
+	.pcm-modal {
+		padding: 16px;
+	}
+}

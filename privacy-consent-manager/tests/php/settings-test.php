@@ -1,0 +1,149 @@
+<?php
+/**
+ * Tests for Settings sanitization and merging.
+ *
+ * @package PCM
+ */
+
+use PCM\Settings;
+use PHPUnit\Framework\TestCase;
+
+class Settings_Test extends TestCase {
+
+	protected function setUp(): void {
+		pcm_test_reset();
+	}
+
+	public function test_defaults_contain_builtin_categories() {
+		$defaults = Settings::defaults();
+		foreach ( array( 'necessary', 'functional', 'analytics', 'marketing', 'preferences' ) as $slug ) {
+			$this->assertArrayHasKey( $slug, $defaults['categories'] );
+		}
+		$this->assertTrue( $defaults['categories']['necessary']['required'] );
+	}
+
+	public function test_sanitize_drops_unknown_sections() {
+		$out = Settings::sanitize( array( 'evil' => array( 'x' => 1 ) ) );
+		$this->assertArrayNotHasKey( 'evil', $out );
+	}
+
+	public function test_sanitize_ga4() {
+		$out = Settings::sanitize(
+			array(
+				'ga4' => array(
+					'enabled'        => '1',
+					'measurement_id' => 'g-abc1234567',
+					'category'       => 'Analytics!!',
+				),
+			)
+		);
+		$this->assertTrue( $out['ga4']['enabled'] );
+		$this->assertSame( 'G-ABC1234567', $out['ga4']['measurement_id'] );
+		$this->assertSame( 'analytics', $out['ga4']['category'] );
+	}
+
+	public function test_sanitize_rejects_invalid_measurement_id() {
+		$out = Settings::sanitize( array( 'ga4' => array( 'measurement_id' => '"><script>alert(1)</script>' ) ) );
+		$this->assertSame( '', $out['ga4']['measurement_id'] );
+	}
+
+	public function test_sanitize_banner_colors_fall_back() {
+		$out = Settings::sanitize( array( 'banner' => array( 'primary_color' => 'javascript:alert(1)' ) ) );
+		$this->assertSame( '#1a73e8', $out['banner']['primary_color'] );
+	}
+
+	public function test_sanitize_categories_never_drops_necessary() {
+		$out = Settings::sanitize(
+			array(
+				'categories' => array(
+					'custom' => array(
+						'label'    => 'Custom',
+						'required' => '1',
+					),
+				),
+			)
+		);
+		$this->assertArrayHasKey( 'necessary', $out['categories'] );
+		$this->assertTrue( $out['categories']['necessary']['required'] );
+		$this->assertArrayHasKey( 'custom', $out['categories'] );
+		$this->assertFalse( $out['categories']['custom']['builtin'] );
+	}
+
+	public function test_sanitize_custom_scripts_requires_name_and_code() {
+		$out = Settings::sanitize(
+			array(
+				'custom_scripts' => array(
+					array( 'name' => '', 'code' => '<script>a()</script>' ),
+					array( 'name' => 'Pixel', 'code' => '<script>b()</script>', 'category' => 'marketing', 'position' => 'header', 'enabled' => '1' ),
+				),
+			)
+		);
+		$this->assertCount( 1, $out['custom_scripts'] );
+		$this->assertSame( 'Pixel', $out['custom_scripts'][0]['name'] );
+		$this->assertSame( 'header', $out['custom_scripts'][0]['position'] );
+	}
+
+	public function test_sanitize_blocker_domains() {
+		$out = Settings::sanitize(
+			array(
+				'blocker' => array(
+					'enabled'   => '1',
+					'domains'   => array(
+						'clarity.ms'  => 'analytics',
+						'bad domain!' => 'analytics',
+					),
+					'allowlist' => array( 'cdn.example.com', 'nope nope' ),
+				),
+			)
+		);
+		$this->assertArrayHasKey( 'clarity.ms', $out['blocker']['domains'] );
+		$this->assertArrayNotHasKey( 'bad domain!', $out['blocker']['domains'] );
+		$this->assertSame( array( 'cdn.example.com' ), $out['blocker']['allowlist'] );
+	}
+
+	public function test_sanitize_blocker_domains_plain_list_defaults_to_analytics() {
+		$out = Settings::sanitize(
+			array(
+				'blocker' => array( 'domains' => array( 'tracker.example.com' ) ),
+			)
+		);
+		$this->assertSame( array( 'tracker.example.com' => 'analytics' ), $out['blocker']['domains'] );
+	}
+
+	public function test_sanitize_jurisdiction_rules() {
+		$out = Settings::sanitize(
+			array(
+				'jurisdictions' => array(
+					'rules' => array(
+						'IN'  => 'dpdp',
+						'xx1' => 'gdpr',
+					),
+				),
+			)
+		);
+		$this->assertSame( array( 'IN' => 'dpdp' ), $out['jurisdictions']['rules'] );
+	}
+
+	public function test_merge_recursive_saved_scalars_win() {
+		$merged = Settings::merge_recursive(
+			array( 'a' => array( 'b' => 1, 'c' => 2 ) ),
+			array( 'a' => array( 'b' => 9 ) )
+		);
+		$this->assertSame( 9, $merged['a']['b'] );
+		$this->assertSame( 2, $merged['a']['c'] );
+	}
+
+	public function test_update_section_replaces_custom_scripts() {
+		$settings = Settings::instance();
+		$settings->update_section( 'custom_scripts', array( array( 'id' => 'a', 'name' => 'A', 'category' => 'marketing', 'position' => 'footer', 'enabled' => true, 'code' => 'x' ) ) );
+		$settings->update_section( 'custom_scripts', array() );
+		$this->assertSame( array(), $settings->get( 'custom_scripts' ) );
+	}
+
+	public function test_retention_bounds() {
+		$out = Settings::sanitize( array( 'consent' => array( 'retention_days' => 5 ) ) );
+		$this->assertSame( 30, $out['consent']['retention_days'] );
+		$out = Settings::sanitize( array( 'consent' => array( 'retention_days' => 99999 ) ) );
+		$this->assertSame( 3650, $out['consent']['retention_days'] );
+	}
+}

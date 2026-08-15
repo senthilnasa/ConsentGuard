@@ -1,0 +1,16 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "es6": false
+    },
+    "parserOptions": {
+        "ecmaVersion": 5
+    },
+    "rules": {
+        "no-unused-vars": "error",
+        "no-undef": "off",
+        "eqeqeq": "error",
+        "no-console": "off"
+    }
+}
