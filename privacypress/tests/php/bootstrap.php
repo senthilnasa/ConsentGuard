@@ -257,3 +257,4 @@ function pcm_test_reset() {
 	$_SERVER['REMOTE_ADDR']      = '127.0.0.1';
 	PCM\Settings::instance()->flush_cache();
 }
+require_once PCM_PLUGIN_DIR . 'includes/class-pdf-writer.php';

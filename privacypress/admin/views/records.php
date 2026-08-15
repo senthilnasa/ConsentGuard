@@ -41,11 +41,12 @@ Admin::maybe_notice();
 			<th><?php esc_html_e( 'Preferences', 'privacypress' ); ?></th>
 			<th><?php esc_html_e( 'Version', 'privacypress' ); ?></th>
 			<th><?php esc_html_e( 'Region', 'privacypress' ); ?></th>
+			<th><?php esc_html_e( 'Proof', 'privacypress' ); ?></th>
 		</tr>
 	</thead>
 	<tbody>
 	<?php if ( empty( $pcm_records['items'] ) ) : ?>
-		<tr><td colspan="9"><?php esc_html_e( 'No consent records yet.', 'privacypress' ); ?></td></tr>
+		<tr><td colspan="10"><?php esc_html_e( 'No consent records yet.', 'privacypress' ); ?></td></tr>
 	<?php endif; ?>
 	<?php foreach ( $pcm_records['items'] as $pcm_row ) : ?>
 		<tr>
@@ -57,6 +58,11 @@ Admin::maybe_notice();
 			<?php endforeach; ?>
 			<td><code><?php echo esc_html( $pcm_row['consent_version'] ); ?></code></td>
 			<td><?php echo esc_html( $pcm_row['region'] ?: '—' ); ?></td>
+			<td>
+				<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=pcm_export_proof&id=' . rawurlencode( $pcm_row['consent_id'] ) ), 'pcm_export_proof', '_pcm_nonce' ) ); ?>">
+					<?php esc_html_e( 'PDF', 'privacypress' ); ?>
+				</a>
+			</td>
 		</tr>
 	<?php endforeach; ?>
 	</tbody>

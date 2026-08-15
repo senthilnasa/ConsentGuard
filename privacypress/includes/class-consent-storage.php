@@ -181,6 +181,29 @@ class Consent_Storage {
 	}
 
 	/**
+	 * Returns the most recent record matching a UUID as either consent ID
+	 * or anonymous ID (used by the proof-of-consent export).
+	 *
+	 * @param string $uuid UUID.
+	 * @return array|null
+	 */
+	public function find_by_uuid( $uuid ) {
+		global $wpdb;
+		$table = $this->table();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE consent_id = %s OR anonymous_id = %s ORDER BY id DESC LIMIT 1",
+				$uuid,
+				$uuid
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
 	 * Deletes all records matching a UUID as either consent ID or anonymous
 	 * ID (admin-initiated erasure from the Consent Records screen).
 	 *

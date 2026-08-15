@@ -10,6 +10,7 @@ namespace PCM\Admin;
 use PCM\Duplicate_Tracking_Detector;
 use PCM\Plugin_Conflict_Manager;
 use PCM\Consent_Storage;
+use PCM\Pdf_Writer;
 use PCM\Policy_Manager;
 use PCM\Security;
 use PCM\Settings;
@@ -74,6 +75,7 @@ class Admin {
 		add_action( 'admin_post_pcm_generate_policy', array( $this, 'handle_generate_policy' ) );
 		add_action( 'admin_post_pcm_export_records', array( $this, 'handle_export_records' ) );
 		add_action( 'admin_post_pcm_delete_record', array( $this, 'handle_delete_record' ) );
+		add_action( 'admin_post_pcm_export_proof', array( $this, 'handle_export_proof' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
@@ -363,6 +365,148 @@ class Admin {
 
 		fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 		exit;
+	}
+
+	/**
+	 * Streams a "Proof of consent" PDF for one consent record.
+	 */
+	public function handle_export_proof() {
+		Security::verify_admin_action( 'pcm_export_proof' );
+
+		$uuid   = isset( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
+		$record = wp_is_uuid( $uuid ) ? $this->storage->find_by_uuid( $uuid ) : null;
+		if ( ! $record ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=pcm-records&pcm-notice=record-not-found' ) );
+			exit;
+		}
+
+		$pdf = $this->build_proof_pdf( $record );
+
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: attachment; filename=proof-of-consent-' . substr( $record['consent_id'], 0, 8 ) . '.pdf' );
+		header( 'Content-Length: ' . strlen( $pdf ) );
+		echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary PDF payload.
+		exit;
+	}
+
+	/**
+	 * Builds the proof-of-consent PDF document for a record.
+	 *
+	 * @param array $record Consent record row.
+	 * @return string Raw PDF bytes.
+	 */
+	public function build_proof_pdf( array $record ) {
+		$settings   = pcm_get_settings();
+		$categories = $settings['categories'];
+
+		$extra = array();
+		if ( ! empty( $record['extra_categories'] ) ) {
+			$decoded = json_decode( (string) $record['extra_categories'], true );
+			if ( is_array( $decoded ) ) {
+				$extra = $decoded;
+			}
+		}
+
+		$granted = array();
+		$denied  = array();
+		foreach ( $categories as $slug => $category ) {
+			if ( ! empty( $category['required'] ) ) {
+				continue;
+			}
+			$state = in_array( $slug, pcm_builtin_categories(), true )
+				? ! empty( $record[ $slug ] )
+				: ! empty( $extra[ $slug ] );
+			if ( $state ) {
+				$granted[] = $slug;
+			} else {
+				$denied[] = $slug;
+			}
+		}
+
+		if ( 'reject_all' === $record['action'] || empty( $granted ) ) {
+			$status = __( 'Rejected', 'privacypress' );
+		} elseif ( empty( $denied ) ) {
+			$status = __( 'Accepted', 'privacypress' );
+		} else {
+			$status = __( 'Customized', 'privacypress' );
+		}
+
+		// Services managed by this plugin, grouped by category.
+		$services = array();
+		$managed  = array(
+			array( 'ga4', __( 'Google Analytics 4', 'privacypress' ) ),
+			array( 'clarity', __( 'Microsoft Clarity', 'privacypress' ) ),
+			array( 'cloudflare', __( 'Cloudflare Web Analytics', 'privacypress' ) ),
+			array( 'gtm', __( 'Google Tag Manager', 'privacypress' ) ),
+		);
+		foreach ( $managed as $entry ) {
+			list( $key, $label ) = $entry;
+			if ( ! empty( $settings[ $key ]['enabled'] ) ) {
+				$services[ $settings[ $key ]['category'] ][] = $label;
+			}
+		}
+		foreach ( (array) $settings['custom_scripts'] as $script ) {
+			if ( ! empty( $script['enabled'] ) ) {
+				$services[ $script['category'] ][] = $script['name'];
+			}
+		}
+
+		$pdf = new Pdf_Writer( __( 'Proof of consent', 'privacypress' ) );
+		$pdf->title( __( 'Proof of consent', 'privacypress' ) );
+
+		$pdf->field( __( 'Consented domain', 'privacypress' ), (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		$pdf->field( __( 'Consent date', 'privacypress' ), $record['created_at'] . ' UTC+00:00' );
+		$pdf->field( __( 'Consent ID', 'privacypress' ), $record['consent_id'] );
+		$pdf->field( __( 'Anonymous visitor ID', 'privacypress' ), $record['anonymous_id'] ?: __( 'Not provided', 'privacypress' ) );
+		$pdf->field( __( 'Region / profile', 'privacypress' ), $record['region'] ?: __( 'Not available', 'privacypress' ) );
+		$pdf->field( __( 'Language', 'privacypress' ), $record['language'] ?: __( 'Not available', 'privacypress' ) );
+		$pdf->field( __( 'IP address', 'privacypress' ), __( 'Not stored (privacy by design)', 'privacypress' ) );
+		$pdf->field( __( 'Consent status', 'privacypress' ), $status );
+		$pdf->field( __( 'Recorded action', 'privacypress' ), $record['action'] );
+		$pdf->field( __( 'Consent version', 'privacypress' ), $record['consent_version'] ?: '-' );
+		$pdf->field( __( 'Policy version', 'privacypress' ), $record['policy_version'] ?: '-' );
+
+		$pdf->heading( __( 'Category-wise consent status', 'privacypress' ) );
+		foreach ( $categories as $slug => $category ) {
+			if ( ! empty( $category['required'] ) ) {
+				$state_label = __( 'Always Active', 'privacypress' );
+			} else {
+				$state_label = in_array( $slug, $granted, true )
+					? __( 'Accepted', 'privacypress' )
+					: __( 'Rejected', 'privacypress' );
+			}
+			$pdf->space( 6 );
+			$pdf->paragraph( $category['label'] . ':  ' . $state_label, 12, true );
+			if ( ! empty( $category['description'] ) ) {
+				$pdf->paragraph( $category['description'], 10, false, 12 );
+			}
+			if ( ! empty( $services[ $slug ] ) ) {
+				$pdf->paragraph(
+					__( 'Managed services:', 'privacypress' ) . ' ' . implode( ', ', array_unique( $services[ $slug ] ) ),
+					10,
+					false,
+					12
+				);
+			}
+		}
+
+		$pdf->space( 16 );
+		$pdf->paragraph(
+			__( 'This document was generated by PrivacyPress from the consent record stored on the website\'s own server. Consent records contain no IP addresses or direct identifiers; the anonymous visitor ID is generated in the visitor\'s browser.', 'privacypress' ),
+			9
+		);
+		$pdf->paragraph(
+			sprintf(
+				/* translators: 1: site URL, 2: generation time */
+				__( 'Generated by %1$s on %2$s UTC.', 'privacypress' ),
+				home_url(),
+				gmdate( 'Y-m-d H:i:s' )
+			),
+			9
+		);
+
+		return $pdf->render();
 	}
 
 	/**
