@@ -92,8 +92,34 @@
 		}
 	}
 
+	/**
+	 * Bridges consent to the WordPress Consent API (wp-consent-api plugin)
+	 * so other consent-aware plugins see the same decision.
+	 *
+	 * @param {Object} consent category => boolean.
+	 */
+	function syncWpConsentApi( consent ) {
+		if ( typeof window.wp_set_consent !== 'function' ) {
+			return;
+		}
+		var map = {
+			functional: 'functional',
+			analytics: 'statistics',
+			marketing: 'marketing',
+			preferences: 'preferences'
+		};
+		var category;
+		for ( category in map ) {
+			if ( Object.prototype.hasOwnProperty.call( map, category ) && category in consent ) {
+				window.wp_set_consent( map[ category ], consent[ category ] ? 'allow' : 'deny' );
+			}
+		}
+		log( 'WP Consent API synchronized' );
+	}
+
 	window.PCMAnalytics = {
 		updateConsentMode: updateConsentMode,
-		clearDeniedCookies: clearDeniedCookies
+		clearDeniedCookies: clearDeniedCookies,
+		syncWpConsentApi: syncWpConsentApi
 	};
 }() );

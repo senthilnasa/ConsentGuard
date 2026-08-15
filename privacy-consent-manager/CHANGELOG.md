@@ -24,7 +24,17 @@ All notable changes to Privacy & Consent Manager.
 - JavaScript consent API (`PrivacyConsent.*`) with DOM events; PHP actions/filters; REST API (`pcm/v1`) with capability checks and a rate-limited public consent endpoint.
 - Debug mode with `[PCM]` console logging.
 - Elementor editor/admin suppression options; translation-ready (POT included).
-- PHPUnit unit suite (53 tests) and Jest suite (15 tests); PHPCS (WordPress standards) configuration.
+- Jurisdiction consent models per profile — opt-in (consent first), OneTrust-style opt-out (implied until objection) and notice-only — with a preconfigured "US-style (opt-out)" profile.
+- Global Privacy Control (GPC): the browser signal keeps the Marketing category denied on blanket accepts (on by default, admin-controllable; an explicit toggle in the preferences modal still wins).
+- WP Consent API bridge: consent decisions are mirrored via wp_set_consent() so other consent-aware plugins observe the same state.
+- Banner themes (light / dark / auto with prefers-color-scheme) and a refreshed design: layered shadows, backdrop blur, hover states, refined toggles and animations.
+- Consent records: CSV export and delete-by-ID (erasure requests) from the Consent Records screen.
+- `[pcm_privacy_settings]` shortcode to reopen the preferences modal from any page or menu.
+- Database upgrade check on admin_init so schema changes apply after plugin updates without reactivation.
+- PHPUnit unit suite (59 tests) and Jest suite (22 tests); PHPCS (WordPress standards) configuration; GitHub Actions CI (PHP 7.4–8.3 matrix, PHPCS, Jest).
+
+### Fixed
+- Presence-based settings sanitization: saving one admin screen can no longer reset checkbox settings that live on a different screen.
 
 ### Security
 - Nonces on all admin actions, capability checks everywhere, `unfiltered_html` gate for executable scripts, strict input validation, prepared statements, directory index guards.

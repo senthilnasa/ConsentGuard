@@ -23,6 +23,12 @@ Admin::maybe_notice();
 	<?php esc_html_e( 'Records are stored without IP addresses or other direct identifiers. The anonymous ID is generated in the visitor\'s browser and shown to them in the preferences modal so they can reference their own consent.', 'privacy-consent-manager' ); ?>
 </p>
 
+<p>
+	<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=pcm_export_records' ), 'pcm_export_records', '_pcm_nonce' ) ); ?>">
+		<?php esc_html_e( 'Export all records (CSV)', 'privacy-consent-manager' ); ?>
+	</a>
+</p>
+
 <table class="widefat striped pcm-table">
 	<thead>
 		<tr>
@@ -78,3 +84,15 @@ Admin::maybe_notice();
 	);
 	?>
 </p>
+
+<h2><?php esc_html_e( 'Delete records by ID', 'privacy-consent-manager' ); ?></h2>
+<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+	<?php wp_nonce_field( 'pcm_delete_record', '_pcm_nonce' ); ?>
+	<input type="hidden" name="action" value="pcm_delete_record" />
+	<p>
+		<label for="pcm-record-uuid"><?php esc_html_e( 'Consent ID or anonymous ID (full UUID)', 'privacy-consent-manager' ); ?></label><br />
+		<input id="pcm-record-uuid" type="text" class="regular-text code" name="pcm_record_uuid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+		<button type="submit" class="button button-secondary"><?php esc_html_e( 'Delete matching records', 'privacy-consent-manager' ); ?></button>
+	</p>
+	<p class="description"><?php esc_html_e( 'Use this to honour an erasure request: the visitor can read their anonymous consent ID in the preferences modal. Deletion is permanent.', 'privacy-consent-manager' ); ?></p>
+</form>

@@ -79,8 +79,21 @@ Lists active plugins known to inject the same trackers you configured here.
 
 ## Jurisdiction Rules
 
-Profiles (GDPR, UK GDPR, India DPDP, Default) control consent behaviour per
-region; map countries to profiles. Geolocation uses only trusted
+Profiles (GDPR, UK GDPR, India DPDP, US-style opt-out, Default) control
+consent behaviour per region; map countries to profiles. Each profile has a
+**consent model**:
+
+- **Opt-in** — nothing non-essential runs before the visitor agrees (GDPR-style).
+- **Opt-out** — tracking is implied until the visitor objects (OneTrust-style
+  US behaviour); the banner still shows, and no consent record is stored
+  until the visitor makes an explicit choice.
+- **Notice only** — like opt-out, but the banner offers no Reject All button
+  (visitors can still opt out via Manage Preferences).
+
+Choosing opt-out or notice-only for a region is a legal decision you make;
+the plugin never defaults to implied consent. The browser **Global Privacy
+Control** signal (Settings → Advanced) keeps the Marketing category denied
+even under implied consent or Accept All. Geolocation uses only trusted
 infrastructure headers (Cloudflare `CF-IPCountry`, GeoIP server modules) —
 no external API, no stored IPs. With geolocation off or unavailable the
 default profile applies, so keep the default the strictest profile you need.

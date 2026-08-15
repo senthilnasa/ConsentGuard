@@ -48,6 +48,28 @@ class Frontend {
 	 */
 	public function register() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_shortcode( 'pcm_privacy_settings', array( $this, 'shortcode_privacy_settings' ) );
+	}
+
+	/**
+	 * [pcm_privacy_settings label="..."] renders a button that opens the
+	 * consent preferences modal — for footers, policy pages, menus etc.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function shortcode_privacy_settings( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'label' => pcm_get_setting( 'banner.reopen_label', __( 'Privacy Settings', 'privacy-consent-manager' ) ),
+			),
+			$atts,
+			'pcm_privacy_settings'
+		);
+		return sprintf(
+			'<button type="button" class="pcm-open-preferences pcm-inline-open">%s</button>',
+			esc_html( $atts['label'] )
+		);
 	}
 
 	/**
@@ -108,11 +130,13 @@ class Frontend {
 	 */
 	private function resolve_profile_config() {
 		$resolved = $this->geo->resolve_profile();
+		$mode     = isset( $resolved['profile']['mode'] ) ? $resolved['profile']['mode'] : 'opt_in';
 		return array(
 			'key'            => $resolved['key'],
 			'requireConsent' => ! empty( $resolved['profile']['require_consent'] ),
 			'showRejectAll'  => ! empty( $resolved['profile']['show_reject_all'] ),
 			'granular'       => ! empty( $resolved['profile']['granular'] ),
+			'mode'           => in_array( $mode, array( 'opt_in', 'opt_out', 'notice_only' ), true ) ? $mode : 'opt_in',
 		);
 	}
 

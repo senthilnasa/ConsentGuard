@@ -181,6 +181,27 @@ class Consent_Storage {
 	}
 
 	/**
+	 * Deletes all records matching a UUID as either consent ID or anonymous
+	 * ID (admin-initiated erasure from the Consent Records screen).
+	 *
+	 * @param string $uuid UUID.
+	 * @return int Deleted rows.
+	 */
+	public function delete_by_uuid( $uuid ) {
+		global $wpdb;
+		$table = $this->table();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$deleted = (int) $wpdb->query(
+			$wpdb->prepare( "DELETE FROM {$table} WHERE consent_id = %s OR anonymous_id = %s", $uuid, $uuid )
+		);
+		// phpcs:enable
+		if ( $deleted > 0 ) {
+			delete_transient( 'pcm_consent_stats' );
+		}
+		return $deleted;
+	}
+
+	/**
 	 * Deletes all records for an anonymous identifier (withdrawal/erasure support).
 	 *
 	 * @param string $anonymous_id Anonymous identifier.

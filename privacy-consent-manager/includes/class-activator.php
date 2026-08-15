@@ -29,6 +29,20 @@ class Activator {
 	}
 
 	/**
+	 * Applies schema/config upgrades after a plugin update (activation hooks
+	 * do not run on updates). Hooked to admin_init.
+	 */
+	public static function maybe_upgrade() {
+		if ( get_option( 'pcm_db_version' ) !== PCM_DB_VERSION ) {
+			self::create_tables();
+			update_option( 'pcm_db_version', PCM_DB_VERSION );
+		}
+		if ( ! wp_next_scheduled( 'pcm_cleanup_consents' ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'pcm_cleanup_consents' );
+		}
+	}
+
+	/**
 	 * Creates (or upgrades) the consent records table.
 	 */
 	public static function create_tables() {

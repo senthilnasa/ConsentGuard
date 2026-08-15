@@ -72,6 +72,8 @@ class Admin {
 		add_action( 'admin_post_pcm_conflict', array( $this, 'handle_conflict_action' ) );
 		add_action( 'admin_post_pcm_scan', array( $this, 'handle_scan' ) );
 		add_action( 'admin_post_pcm_generate_policy', array( $this, 'handle_generate_policy' ) );
+		add_action( 'admin_post_pcm_export_records', array( $this, 'handle_export_records' ) );
+		add_action( 'admin_post_pcm_delete_record', array( $this, 'handle_delete_record' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
@@ -333,6 +335,50 @@ class Admin {
 	}
 
 	/**
+	 * Streams all consent records as CSV (proof-of-consent export).
+	 */
+	public function handle_export_records() {
+		Security::verify_admin_action( 'pcm_export_records' );
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=consent-records-' . gmdate( 'Ymd-His' ) . '.csv' );
+
+		$out     = fopen( 'php://output', 'w' );
+		$columns = array( 'created_at', 'consent_id', 'anonymous_id', 'action', 'necessary', 'functional', 'analytics', 'marketing', 'preferences', 'extra_categories', 'consent_version', 'policy_version', 'region', 'language' );
+		fputcsv( $out, $columns );
+
+		$page = 1;
+		do {
+			$batch = $this->storage->get_records( $page, 100 );
+			foreach ( $batch['items'] as $row ) {
+				$line = array();
+				foreach ( $columns as $column ) {
+					$line[] = isset( $row[ $column ] ) ? $row[ $column ] : '';
+				}
+				fputcsv( $out, $line );
+			}
+			$page++;
+		} while ( count( $batch['items'] ) === 100 );
+
+		fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+		exit;
+	}
+
+	/**
+	 * Deletes consent records matching a consent/anonymous ID.
+	 */
+	public function handle_delete_record() {
+		Security::verify_admin_action( 'pcm_delete_record' );
+
+		$uuid    = isset( $_POST['pcm_record_uuid'] ) ? sanitize_text_field( wp_unslash( $_POST['pcm_record_uuid'] ) ) : '';
+		$deleted = wp_is_uuid( $uuid ) ? $this->storage->delete_by_uuid( $uuid ) : 0;
+
+		wp_safe_redirect( admin_url( 'admin.php?page=pcm-records&pcm-notice=' . ( $deleted > 0 ? 'record-deleted' : 'record-not-found' ) ) );
+		exit;
+	}
+
+	/**
 	 * Admin assets, loaded only on plugin pages.
 	 *
 	 * @param string $hook Current admin page hook.
@@ -391,6 +437,8 @@ class Admin {
 				'scan-done'        => array( 'success', __( 'Scan completed.', 'privacy-consent-manager' ) ),
 				'scan-failed'      => array( 'error', __( 'Scan failed. Check that your site can reach its own homepage (loopback requests).', 'privacy-consent-manager' ) ),
 				'policy-generated' => array( 'success', __( 'Cookie policy draft generated. Review it below and have it checked by your legal team before publishing.', 'privacy-consent-manager' ) ),
+				'record-deleted'   => array( 'success', __( 'Matching consent records were deleted.', 'privacy-consent-manager' ) ),
+				'record-not-found' => array( 'warning', __( 'No consent records matched that ID (a full UUID is required).', 'privacy-consent-manager' ) ),
 			);
 			if ( isset( $messages[ $key ] ) ) {
 				printf(

@@ -23,7 +23,7 @@ Admin::maybe_notice();
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Geolocation', 'privacy-consent-manager' ); ?></th>
 		<td>
-			<label><input type="checkbox" name="pcm[jurisdictions][geo_enabled]" value="1" <?php checked( $pcm_j['geo_enabled'] ); ?> /> <?php esc_html_e( 'Resolve the visitor country from trusted infrastructure headers (Cloudflare, GeoIP modules)', 'privacy-consent-manager' ); ?></label>
+			<label><input type="hidden" name="pcm[jurisdictions][geo_enabled]" value="" /><input type="checkbox" name="pcm[jurisdictions][geo_enabled]" value="1" <?php checked( $pcm_j['geo_enabled'] ); ?> /> <?php esc_html_e( 'Resolve the visitor country from trusted infrastructure headers (Cloudflare, GeoIP modules)', 'privacy-consent-manager' ); ?></label>
 			<p class="description"><?php esc_html_e( 'No external geolocation API is called and no IP address is stored. When disabled — or when no header is available — every visitor gets the default profile, so keep the default profile the strictest one you need. Note: with full-page caching, per-country behaviour requires your cache to vary on the country header.', 'privacy-consent-manager' ); ?></p>
 		</td>
 	</tr>
@@ -73,6 +73,7 @@ Admin::maybe_notice();
 	<thead>
 		<tr>
 			<th><?php esc_html_e( 'Profile', 'privacy-consent-manager' ); ?></th>
+			<th><?php esc_html_e( 'Consent model', 'privacy-consent-manager' ); ?></th>
 			<th><?php esc_html_e( 'Require consent before non-essential tracking', 'privacy-consent-manager' ); ?></th>
 			<th><?php esc_html_e( 'Show Reject All', 'privacy-consent-manager' ); ?></th>
 			<th><?php esc_html_e( 'Granular categories', 'privacy-consent-manager' ); ?></th>
@@ -84,9 +85,16 @@ Admin::maybe_notice();
 			<td>
 				<input type="text" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][label]" value="<?php echo esc_attr( $pcm_profile['label'] ); ?>" />
 			</td>
-			<td><input type="checkbox" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][require_consent]" value="1" <?php checked( ! empty( $pcm_profile['require_consent'] ) ); ?> /></td>
-			<td><input type="checkbox" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][show_reject_all]" value="1" <?php checked( ! empty( $pcm_profile['show_reject_all'] ) ); ?> /></td>
-			<td><input type="checkbox" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][granular]" value="1" <?php checked( ! empty( $pcm_profile['granular'] ) ); ?> /></td>
+			<td>
+				<select name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][mode]">
+					<option value="opt_in" <?php selected( $pcm_profile['mode'] ?? 'opt_in', 'opt_in' ); ?>><?php esc_html_e( 'Opt-in (consent first)', 'privacy-consent-manager' ); ?></option>
+					<option value="opt_out" <?php selected( $pcm_profile['mode'] ?? 'opt_in', 'opt_out' ); ?>><?php esc_html_e( 'Opt-out (implied until objection)', 'privacy-consent-manager' ); ?></option>
+					<option value="notice_only" <?php selected( $pcm_profile['mode'] ?? 'opt_in', 'notice_only' ); ?>><?php esc_html_e( 'Notice only', 'privacy-consent-manager' ); ?></option>
+				</select>
+			</td>
+			<td><input type="hidden" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][require_consent]" value="" /><input type="checkbox" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][require_consent]" value="1" <?php checked( ! empty( $pcm_profile['require_consent'] ) ); ?> /></td>
+			<td><input type="hidden" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][show_reject_all]" value="" /><input type="checkbox" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][show_reject_all]" value="1" <?php checked( ! empty( $pcm_profile['show_reject_all'] ) ); ?> /></td>
+			<td><input type="hidden" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][granular]" value="" /><input type="checkbox" name="pcm[jurisdictions][profiles][<?php echo esc_attr( $pcm_key ); ?>][granular]" value="1" <?php checked( ! empty( $pcm_profile['granular'] ) ); ?> /></td>
 		</tr>
 	<?php endforeach; ?>
 	</tbody>

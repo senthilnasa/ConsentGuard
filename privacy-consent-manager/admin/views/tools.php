@@ -22,14 +22,14 @@ Admin::maybe_notice();
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Debug mode', 'privacy-consent-manager' ); ?></th>
 		<td>
-			<label><input type="checkbox" name="pcm[advanced][debug]" value="1" <?php checked( $settings['advanced']['debug'] ); ?> /> <?php esc_html_e( 'Log consent decisions and script blocking to the browser console ([PCM] prefix)', 'privacy-consent-manager' ); ?></label>
+			<label><input type="hidden" name="pcm[advanced][debug]" value="" /><input type="checkbox" name="pcm[advanced][debug]" value="1" <?php checked( $settings['advanced']['debug'] ); ?> /> <?php esc_html_e( 'Log consent decisions and script blocking to the browser console ([PCM] prefix)', 'privacy-consent-manager' ); ?></label>
 			<p class="description"><?php esc_html_e( 'For development only — disable on production sites. No sensitive information is logged either way.', 'privacy-consent-manager' ); ?></p>
 		</td>
 	</tr>
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Keep uninstall data setting', 'privacy-consent-manager' ); ?></th>
 		<td>
-			<label><input type="checkbox" name="pcm[advanced][delete_on_uninstall]" value="1" <?php checked( $settings['advanced']['delete_on_uninstall'] ); ?> /> <?php esc_html_e( 'Delete plugin data on uninstall', 'privacy-consent-manager' ); ?></label>
+			<label><input type="hidden" name="pcm[advanced][delete_on_uninstall]" value="" /><input type="checkbox" name="pcm[advanced][delete_on_uninstall]" value="1" <?php checked( $settings['advanced']['delete_on_uninstall'] ); ?> /> <?php esc_html_e( 'Delete plugin data on uninstall', 'privacy-consent-manager' ); ?></label>
 		</td>
 	</tr>
 </table>

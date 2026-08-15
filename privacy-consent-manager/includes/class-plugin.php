@@ -91,6 +91,7 @@ final class Plugin {
 		$this->load_integrations();
 
 		add_action( 'pcm_cleanup_consents', array( $storage, 'cleanup_expired' ) );
+		add_action( 'admin_init', array( Activator::class, 'maybe_upgrade' ) );
 
 		/**
 		 * Fires after every plugin module has been registered.
@@ -110,6 +111,7 @@ final class Plugin {
 			'cloudflare.php',
 			'google-analytics.php',
 			'google-tag-manager.php',
+			'wp-consent-api.php',
 			'generic.php',
 		);
 		foreach ( $integrations as $file ) {

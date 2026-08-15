@@ -20,7 +20,7 @@ Admin::maybe_notice();
 <table class="form-table" role="presentation">
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Banner enabled', 'privacy-consent-manager' ); ?></th>
-		<td><label><input type="checkbox" name="pcm[consent][banner_enabled]" value="1" <?php checked( $settings['consent']['banner_enabled'] ); ?> /> <?php esc_html_e( 'Show consent banner', 'privacy-consent-manager' ); ?></label></td>
+		<td><label><input type="hidden" name="pcm[consent][banner_enabled]" value="" /><input type="checkbox" name="pcm[consent][banner_enabled]" value="1" <?php checked( $settings['consent']['banner_enabled'] ); ?> /> <?php esc_html_e( 'Show consent banner', 'privacy-consent-manager' ); ?></label></td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="pcm-consent-version"><?php esc_html_e( 'Consent version', 'privacy-consent-manager' ); ?></label></th>
@@ -31,7 +31,7 @@ Admin::maybe_notice();
 	</tr>
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Re-prompt on version change', 'privacy-consent-manager' ); ?></th>
-		<td><label><input type="checkbox" name="pcm[consent][reprompt_on_change]" value="1" <?php checked( $settings['consent']['reprompt_on_change'] ); ?> /> <?php esc_html_e( 'Treat stored consent from an older version as absent', 'privacy-consent-manager' ); ?></label></td>
+		<td><label><input type="hidden" name="pcm[consent][reprompt_on_change]" value="" /><input type="checkbox" name="pcm[consent][reprompt_on_change]" value="1" <?php checked( $settings['consent']['reprompt_on_change'] ); ?> /> <?php esc_html_e( 'Treat stored consent from an older version as absent', 'privacy-consent-manager' ); ?></label></td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="pcm-cookie-expiry"><?php esc_html_e( 'Consent cookie lifetime (days)', 'privacy-consent-manager' ); ?></label></th>
@@ -39,7 +39,7 @@ Admin::maybe_notice();
 	</tr>
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Server-side consent records', 'privacy-consent-manager' ); ?></th>
-		<td><label><input type="checkbox" name="pcm[consent][store_records]" value="1" <?php checked( $settings['consent']['store_records'] ); ?> /> <?php esc_html_e( 'Store anonymous consent records in the database (proof of consent)', 'privacy-consent-manager' ); ?></label></td>
+		<td><label><input type="hidden" name="pcm[consent][store_records]" value="" /><input type="checkbox" name="pcm[consent][store_records]" value="1" <?php checked( $settings['consent']['store_records'] ); ?> /> <?php esc_html_e( 'Store anonymous consent records in the database (proof of consent)', 'privacy-consent-manager' ); ?></label></td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="pcm-retention"><?php esc_html_e( 'Record retention (days)', 'privacy-consent-manager' ); ?></label></th>
@@ -52,7 +52,7 @@ Admin::maybe_notice();
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Enable', 'privacy-consent-manager' ); ?></th>
 		<td>
-			<label><input type="checkbox" name="pcm[blocker][enabled]" value="1" <?php checked( $settings['blocker']['enabled'] ); ?> /> <?php esc_html_e( 'Automatically hold known third-party tracking scripts until consent', 'privacy-consent-manager' ); ?></label>
+			<label><input type="hidden" name="pcm[blocker][enabled]" value="" /><input type="checkbox" name="pcm[blocker][enabled]" value="1" <?php checked( $settings['blocker']['enabled'] ); ?> /> <?php esc_html_e( 'Automatically hold known third-party tracking scripts until consent', 'privacy-consent-manager' ); ?></label>
 			<p class="description"><?php esc_html_e( 'Applies to scripts injected by themes and other plugins. Same-site scripts are never blocked.', 'privacy-consent-manager' ); ?></p>
 		</td>
 	</tr>
@@ -79,9 +79,15 @@ Admin::maybe_notice();
 <h2><?php esc_html_e( 'Advanced', 'privacy-consent-manager' ); ?></h2>
 <table class="form-table" role="presentation">
 	<tr>
+		<th scope="row"><?php esc_html_e( 'Global Privacy Control', 'privacy-consent-manager' ); ?></th>
+		<td>
+			<label><input type="hidden" name="pcm[advanced][respect_gpc]" value="" /><input type="checkbox" name="pcm[advanced][respect_gpc]" value="1" <?php checked( $settings['advanced']['respect_gpc'] ); ?> /> <?php esc_html_e( 'Respect the browser GPC signal: keep the Marketing category denied on blanket accepts (an explicit toggle in the preferences modal still wins)', 'privacy-consent-manager' ); ?></label>
+		</td>
+	</tr>
+	<tr>
 		<th scope="row"><?php esc_html_e( 'Delete plugin data on uninstall', 'privacy-consent-manager' ); ?></th>
 		<td>
-			<label><input type="checkbox" name="pcm[advanced][delete_on_uninstall]" value="1" <?php checked( $settings['advanced']['delete_on_uninstall'] ); ?> /> <?php esc_html_e( 'Remove all settings and consent records when the plugin is uninstalled (never on deactivation)', 'privacy-consent-manager' ); ?></label>
+			<label><input type="hidden" name="pcm[advanced][delete_on_uninstall]" value="" /><input type="checkbox" name="pcm[advanced][delete_on_uninstall]" value="1" <?php checked( $settings['advanced']['delete_on_uninstall'] ); ?> /> <?php esc_html_e( 'Remove all settings and consent records when the plugin is uninstalled (never on deactivation)', 'privacy-consent-manager' ); ?></label>
 		</td>
 	</tr>
 </table>

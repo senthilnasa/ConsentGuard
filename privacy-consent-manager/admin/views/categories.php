@@ -38,7 +38,7 @@ Admin::maybe_notice();
 				<?php if ( 'necessary' === $pcm_slug ) : ?>
 					<span class="pcm-badge pcm-badge-green"><?php esc_html_e( 'Always', 'privacy-consent-manager' ); ?></span>
 				<?php else : ?>
-					<input type="checkbox" name="pcm[categories][<?php echo esc_attr( $pcm_slug ); ?>][required]" value="1" <?php checked( ! empty( $pcm_cat['required'] ) ); ?> />
+					<input type="hidden" name="pcm[categories][<?php echo esc_attr( $pcm_slug ); ?>][required]" value="" /><input type="checkbox" name="pcm[categories][<?php echo esc_attr( $pcm_slug ); ?>][required]" value="1" <?php checked( ! empty( $pcm_cat['required'] ) ); ?> />
 				<?php endif; ?>
 			</td>
 		</tr>

@@ -79,7 +79,8 @@ class Settings {
 				'background_color'  => '#ffffff',
 				'button_text_color' => '#ffffff',
 				'font_size'         => 15,
-				'border_radius'     => 8,
+				'border_radius'     => 12,
+				'theme'             => 'light', // light | dark | auto.
 				'animation'         => 'slide', // slide | fade | none.
 				'hide_in_admin'     => true,
 				'hide_in_elementor' => true,
@@ -147,6 +148,7 @@ class Settings {
 			'advanced'      => array(
 				'debug'               => false,
 				'delete_on_uninstall' => false,
+				'respect_gpc'         => true,
 			),
 		);
 	}
@@ -221,29 +223,40 @@ class Settings {
 	 */
 	public static function default_profiles() {
 		return array(
-			'gdpr'    => array(
+			'gdpr'      => array(
 				'label'           => __( 'EU / EEA (GDPR)', 'privacy-consent-manager' ),
 				'require_consent' => true,
 				'show_reject_all' => true,
 				'granular'        => true,
+				'mode'            => 'opt_in',
 			),
-			'uk_gdpr' => array(
+			'uk_gdpr'   => array(
 				'label'           => __( 'United Kingdom (UK GDPR)', 'privacy-consent-manager' ),
 				'require_consent' => true,
 				'show_reject_all' => true,
 				'granular'        => true,
+				'mode'            => 'opt_in',
 			),
-			'dpdp'    => array(
+			'dpdp'      => array(
 				'label'           => __( 'India (DPDP Act)', 'privacy-consent-manager' ),
 				'require_consent' => true,
 				'show_reject_all' => true,
 				'granular'        => true,
+				'mode'            => 'opt_in',
 			),
-			'default' => array(
+			'us_optout' => array(
+				'label'           => __( 'US-style (opt-out)', 'privacy-consent-manager' ),
+				'require_consent' => false,
+				'show_reject_all' => true,
+				'granular'        => true,
+				'mode'            => 'opt_out',
+			),
+			'default'   => array(
 				'label'           => __( 'Default (rest of world)', 'privacy-consent-manager' ),
 				'require_consent' => true,
 				'show_reject_all' => true,
 				'granular'        => true,
+				'mode'            => 'opt_in',
 			),
 		);
 	}
@@ -343,22 +356,40 @@ class Settings {
 	 * Sanitizes a whole settings payload keyed by section. Unknown sections
 	 * are dropped. Used by the admin UI and the REST settings endpoint.
 	 *
+	 * Presence-based: only keys that exist in the input are emitted, so a
+	 * form that carries just part of a section never resets the rest of it
+	 * (update_section() merges the result over the stored values). Admin
+	 * checkboxes therefore ship a hidden empty-value companion so that
+	 * "unchecked" still posts the key.
+	 *
 	 * @param array $input Raw input.
 	 * @return array Sanitized sections only.
 	 */
 	public static function sanitize( array $input ) {
 		$out = array();
 
+		$pick_bools = static function ( array $src, array $keys ) {
+			$picked = array();
+			foreach ( $keys as $key ) {
+				if ( array_key_exists( $key, $src ) ) {
+					$picked[ $key ] = ! empty( $src[ $key ] );
+				}
+			}
+			return $picked;
+		};
+
 		if ( isset( $input['consent'] ) ) {
 			$c              = (array) $input['consent'];
-			$out['consent'] = array(
-				'banner_enabled'     => ! empty( $c['banner_enabled'] ),
-				'cookie_expiry'      => max( 1, min( 730, absint( $c['cookie_expiry'] ?? 180 ) ) ),
-				'retention_days'     => max( 30, min( 3650, absint( $c['retention_days'] ?? 365 ) ) ),
-				'store_records'      => ! empty( $c['store_records'] ),
-				'consent_version'    => sanitize_text_field( $c['consent_version'] ?? '1.0' ),
-				'reprompt_on_change' => ! empty( $c['reprompt_on_change'] ),
-			);
+			$out['consent'] = $pick_bools( $c, array( 'banner_enabled', 'store_records', 'reprompt_on_change' ) );
+			if ( array_key_exists( 'cookie_expiry', $c ) ) {
+				$out['consent']['cookie_expiry'] = max( 1, min( 730, absint( $c['cookie_expiry'] ) ) );
+			}
+			if ( array_key_exists( 'retention_days', $c ) ) {
+				$out['consent']['retention_days'] = max( 30, min( 3650, absint( $c['retention_days'] ) ) );
+			}
+			if ( array_key_exists( 'consent_version', $c ) ) {
+				$out['consent']['consent_version'] = sanitize_text_field( $c['consent_version'] );
+			}
 		}
 
 		if ( isset( $input['categories'] ) && is_array( $input['categories'] ) ) {
@@ -385,78 +416,101 @@ class Settings {
 
 		if ( isset( $input['banner'] ) ) {
 			$b             = (array) $input['banner'];
-			$out['banner'] = array(
-				'position'          => in_array( $b['position'] ?? '', array( 'bottom', 'top', 'bottom-left', 'bottom-right', 'center' ), true ) ? $b['position'] : 'bottom',
-				'layout'            => in_array( $b['layout'] ?? '', array( 'bar', 'box' ), true ) ? $b['layout'] : 'bar',
-				'title'             => sanitize_text_field( $b['title'] ?? '' ),
-				'message'           => sanitize_textarea_field( $b['message'] ?? '' ),
-				'accept_label'      => sanitize_text_field( $b['accept_label'] ?? '' ),
-				'reject_label'      => sanitize_text_field( $b['reject_label'] ?? '' ),
-				'manage_label'      => sanitize_text_field( $b['manage_label'] ?? '' ),
-				'save_label'        => sanitize_text_field( $b['save_label'] ?? '' ),
-				'reopen_label'      => sanitize_text_field( $b['reopen_label'] ?? '' ),
-				'show_close'        => ! empty( $b['show_close'] ),
-				'show_reject'       => ! empty( $b['show_reject'] ),
-				'reopen_button'     => ! empty( $b['reopen_button'] ),
-				'logo_url'          => esc_url_raw( $b['logo_url'] ?? '' ),
-				'primary_color'     => sanitize_hex_color( $b['primary_color'] ?? '' ) ?: '#1a73e8',
-				'text_color'        => sanitize_hex_color( $b['text_color'] ?? '' ) ?: '#1f2937',
-				'background_color'  => sanitize_hex_color( $b['background_color'] ?? '' ) ?: '#ffffff',
-				'button_text_color' => sanitize_hex_color( $b['button_text_color'] ?? '' ) ?: '#ffffff',
-				'font_size'         => max( 10, min( 24, absint( $b['font_size'] ?? 15 ) ) ),
-				'border_radius'     => max( 0, min( 40, absint( $b['border_radius'] ?? 8 ) ) ),
-				'animation'         => in_array( $b['animation'] ?? '', array( 'slide', 'fade', 'none' ), true ) ? $b['animation'] : 'slide',
-				'hide_in_admin'     => ! empty( $b['hide_in_admin'] ),
-				'hide_in_elementor' => ! empty( $b['hide_in_elementor'] ),
+			$out['banner'] = $pick_bools( $b, array( 'show_close', 'show_reject', 'reopen_button', 'hide_in_admin', 'hide_in_elementor' ) );
+
+			$enums = array(
+				'position'  => array( array( 'bottom', 'top', 'bottom-left', 'bottom-right', 'center' ), 'bottom' ),
+				'layout'    => array( array( 'bar', 'box' ), 'bar' ),
+				'animation' => array( array( 'slide', 'fade', 'none' ), 'slide' ),
+				'theme'     => array( array( 'light', 'dark', 'auto' ), 'light' ),
 			);
+			foreach ( $enums as $key => $enum ) {
+				if ( array_key_exists( $key, $b ) ) {
+					$out['banner'][ $key ] = in_array( $b[ $key ], $enum[0], true ) ? $b[ $key ] : $enum[1];
+				}
+			}
+
+			foreach ( array( 'title', 'accept_label', 'reject_label', 'manage_label', 'save_label', 'reopen_label' ) as $key ) {
+				if ( array_key_exists( $key, $b ) ) {
+					$out['banner'][ $key ] = sanitize_text_field( $b[ $key ] );
+				}
+			}
+			if ( array_key_exists( 'message', $b ) ) {
+				$out['banner']['message'] = sanitize_textarea_field( $b['message'] );
+			}
+			if ( array_key_exists( 'logo_url', $b ) ) {
+				$out['banner']['logo_url'] = esc_url_raw( $b['logo_url'] );
+			}
+
+			$colors = array(
+				'primary_color'     => '#1a73e8',
+				'text_color'        => '#1f2937',
+				'background_color'  => '#ffffff',
+				'button_text_color' => '#ffffff',
+			);
+			foreach ( $colors as $key => $fallback ) {
+				if ( array_key_exists( $key, $b ) ) {
+					$out['banner'][ $key ] = sanitize_hex_color( $b[ $key ] ) ?: $fallback;
+				}
+			}
+			if ( array_key_exists( 'font_size', $b ) ) {
+				$out['banner']['font_size'] = max( 10, min( 24, absint( $b['font_size'] ) ) );
+			}
+			if ( array_key_exists( 'border_radius', $b ) ) {
+				$out['banner']['border_radius'] = max( 0, min( 40, absint( $b['border_radius'] ) ) );
+			}
 		}
 
 		if ( isset( $input['ga4'] ) ) {
 			$g          = (array) $input['ga4'];
-			$out['ga4'] = array(
-				'enabled'        => ! empty( $g['enabled'] ),
-				'measurement_id' => pcm_sanitize_ga4_id( $g['measurement_id'] ?? '' ),
-				'category'       => pcm_sanitize_category_slug( $g['category'] ?? 'analytics' ) ?: 'analytics',
-				'anonymize_ip'   => ! empty( $g['anonymize_ip'] ),
-			);
+			$out['ga4'] = $pick_bools( $g, array( 'enabled', 'anonymize_ip' ) );
+			if ( array_key_exists( 'measurement_id', $g ) ) {
+				$out['ga4']['measurement_id'] = pcm_sanitize_ga4_id( $g['measurement_id'] );
+			}
+			if ( array_key_exists( 'category', $g ) ) {
+				$out['ga4']['category'] = pcm_sanitize_category_slug( $g['category'] ) ?: 'analytics';
+			}
 		}
 
 		if ( isset( $input['consent_mode'] ) ) {
 			$m                   = (array) $input['consent_mode'];
-			$out['consent_mode'] = array(
-				'enabled'            => ! empty( $m['enabled'] ),
-				'ads_data_redaction' => ! empty( $m['ads_data_redaction'] ),
-				'url_passthrough'    => ! empty( $m['url_passthrough'] ),
-				'wait_for_update'    => max( 0, min( 5000, absint( $m['wait_for_update'] ?? 500 ) ) ),
-			);
+			$out['consent_mode'] = $pick_bools( $m, array( 'enabled', 'ads_data_redaction', 'url_passthrough' ) );
+			if ( array_key_exists( 'wait_for_update', $m ) ) {
+				$out['consent_mode']['wait_for_update'] = max( 0, min( 5000, absint( $m['wait_for_update'] ) ) );
+			}
 		}
 
 		if ( isset( $input['clarity'] ) ) {
 			$cl             = (array) $input['clarity'];
-			$out['clarity'] = array(
-				'enabled'    => ! empty( $cl['enabled'] ),
-				'project_id' => pcm_sanitize_clarity_id( $cl['project_id'] ?? '' ),
-				'category'   => pcm_sanitize_category_slug( $cl['category'] ?? 'analytics' ) ?: 'analytics',
-			);
+			$out['clarity'] = $pick_bools( $cl, array( 'enabled' ) );
+			if ( array_key_exists( 'project_id', $cl ) ) {
+				$out['clarity']['project_id'] = pcm_sanitize_clarity_id( $cl['project_id'] );
+			}
+			if ( array_key_exists( 'category', $cl ) ) {
+				$out['clarity']['category'] = pcm_sanitize_category_slug( $cl['category'] ) ?: 'analytics';
+			}
 		}
 
 		if ( isset( $input['cloudflare'] ) ) {
 			$cf                = (array) $input['cloudflare'];
-			$out['cloudflare'] = array(
-				'enabled'         => ! empty( $cf['enabled'] ),
-				'token'           => pcm_sanitize_cf_token( $cf['token'] ?? '' ),
-				'category'        => pcm_sanitize_category_slug( $cf['category'] ?? 'analytics' ) ?: 'analytics',
-				'require_consent' => ! empty( $cf['require_consent'] ),
-			);
+			$out['cloudflare'] = $pick_bools( $cf, array( 'enabled', 'require_consent' ) );
+			if ( array_key_exists( 'token', $cf ) ) {
+				$out['cloudflare']['token'] = pcm_sanitize_cf_token( $cf['token'] );
+			}
+			if ( array_key_exists( 'category', $cf ) ) {
+				$out['cloudflare']['category'] = pcm_sanitize_category_slug( $cf['category'] ) ?: 'analytics';
+			}
 		}
 
 		if ( isset( $input['gtm'] ) ) {
 			$t          = (array) $input['gtm'];
-			$out['gtm'] = array(
-				'enabled'      => ! empty( $t['enabled'] ),
-				'container_id' => pcm_sanitize_gtm_id( $t['container_id'] ?? '' ),
-				'category'     => pcm_sanitize_category_slug( $t['category'] ?? 'marketing' ) ?: 'marketing',
-			);
+			$out['gtm'] = $pick_bools( $t, array( 'enabled' ) );
+			if ( array_key_exists( 'container_id', $t ) ) {
+				$out['gtm']['container_id'] = pcm_sanitize_gtm_id( $t['container_id'] );
+			}
+			if ( array_key_exists( 'category', $t ) ) {
+				$out['gtm']['category'] = pcm_sanitize_category_slug( $t['category'] ) ?: 'marketing';
+			}
 		}
 
 		if ( isset( $input['custom_scripts'] ) && is_array( $input['custom_scripts'] ) ) {
@@ -481,80 +535,96 @@ class Settings {
 		}
 
 		if ( isset( $input['blocker'] ) ) {
-			$bl      = (array) $input['blocker'];
-			$domains = array();
-			foreach ( (array) ( $bl['domains'] ?? array() ) as $domain => $category ) {
-				// Plain lists ("domain" without category) default to analytics.
-				$is_list = is_int( $domain );
-				$domain  = pcm_sanitize_domain( $is_list ? $category : $domain );
-				if ( '' === $domain ) {
-					continue;
+			$bl             = (array) $input['blocker'];
+			$out['blocker'] = $pick_bools( $bl, array( 'enabled' ) );
+			if ( array_key_exists( 'domains', $bl ) ) {
+				$domains = array();
+				foreach ( (array) $bl['domains'] as $domain => $category ) {
+					// Plain lists ("domain" without category) default to analytics.
+					$is_list = is_int( $domain );
+					$domain  = pcm_sanitize_domain( $is_list ? $category : $domain );
+					if ( '' === $domain ) {
+						continue;
+					}
+					$domains[ $domain ] = $is_list ? 'analytics' : ( pcm_sanitize_category_slug( $category ) ?: 'analytics' );
 				}
-				$domains[ $domain ] = $is_list ? 'analytics' : ( pcm_sanitize_category_slug( $category ) ?: 'analytics' );
+				$out['blocker']['domains'] = $domains;
 			}
-			$allow = array();
-			foreach ( (array) ( $bl['allowlist'] ?? array() ) as $domain ) {
-				$domain = pcm_sanitize_domain( $domain );
-				if ( '' !== $domain ) {
-					$allow[] = $domain;
+			if ( array_key_exists( 'allowlist', $bl ) ) {
+				$allow = array();
+				foreach ( (array) $bl['allowlist'] as $domain ) {
+					$domain = pcm_sanitize_domain( $domain );
+					if ( '' !== $domain ) {
+						$allow[] = $domain;
+					}
 				}
+				$out['blocker']['allowlist'] = array_values( array_unique( $allow ) );
 			}
-			$out['blocker'] = array(
-				'enabled'   => ! empty( $bl['enabled'] ),
-				'domains'   => $domains,
-				'allowlist' => array_values( array_unique( $allow ) ),
-			);
 		}
 
 		if ( isset( $input['jurisdictions'] ) ) {
-			$j     = (array) $input['jurisdictions'];
-			$rules = array();
-			foreach ( (array) ( $j['rules'] ?? array() ) as $country => $profile ) {
-				$country = strtoupper( sanitize_key( $country ) );
-				if ( preg_match( '/^[A-Z]{2}$/', $country ) ) {
-					$rules[ $country ] = sanitize_key( $profile );
-				}
+			$j                    = (array) $input['jurisdictions'];
+			$out['jurisdictions'] = $pick_bools( $j, array( 'geo_enabled' ) );
+			if ( array_key_exists( 'default_profile', $j ) ) {
+				$out['jurisdictions']['default_profile'] = sanitize_key( $j['default_profile'] ) ?: 'default';
 			}
-			$profiles = array();
-			foreach ( (array) ( $j['profiles'] ?? array() ) as $key => $profile ) {
-				$key = sanitize_key( $key );
-				if ( '' === $key ) {
-					continue;
+			if ( array_key_exists( 'rules', $j ) ) {
+				$rules = array();
+				foreach ( (array) $j['rules'] as $country => $profile ) {
+					$country = strtoupper( sanitize_key( $country ) );
+					if ( preg_match( '/^[A-Z]{2}$/', $country ) ) {
+						$rules[ $country ] = sanitize_key( $profile );
+					}
 				}
-				$profiles[ $key ] = array(
-					'label'           => sanitize_text_field( $profile['label'] ?? $key ),
-					'require_consent' => ! empty( $profile['require_consent'] ),
-					'show_reject_all' => ! empty( $profile['show_reject_all'] ),
-					'granular'        => ! empty( $profile['granular'] ),
-				);
+				$out['jurisdictions']['rules'] = $rules;
 			}
-			$out['jurisdictions'] = array(
-				'geo_enabled'     => ! empty( $j['geo_enabled'] ),
-				'default_profile' => sanitize_key( $j['default_profile'] ?? 'default' ),
-				'rules'           => $rules,
-				'profiles'        => $profiles ?: self::default_profiles(),
-			);
+			if ( array_key_exists( 'profiles', $j ) ) {
+				$profiles = array();
+				foreach ( (array) $j['profiles'] as $key => $profile ) {
+					$key = sanitize_key( $key );
+					if ( '' === $key ) {
+						continue;
+					}
+					$profiles[ $key ] = array(
+						'label'           => sanitize_text_field( $profile['label'] ?? $key ),
+						'require_consent' => ! empty( $profile['require_consent'] ),
+						'show_reject_all' => ! empty( $profile['show_reject_all'] ),
+						'granular'        => ! empty( $profile['granular'] ),
+						'mode'            => in_array( $profile['mode'] ?? '', array( 'opt_in', 'opt_out', 'notice_only' ), true ) ? $profile['mode'] : 'opt_in',
+					);
+				}
+				$out['jurisdictions']['profiles'] = $profiles ?: self::default_profiles();
+			}
 		}
 
 		if ( isset( $input['dpdp'] ) ) {
 			$d           = (array) $input['dpdp'];
-			$out['dpdp'] = array(
-				'notice_text'    => sanitize_textarea_field( $d['notice_text'] ?? '' ),
-				'purpose_text'   => sanitize_textarea_field( $d['purpose_text'] ?? '' ),
-				'rights_text'    => sanitize_textarea_field( $d['rights_text'] ?? '' ),
-				'contact_email'  => sanitize_email( $d['contact_email'] ?? '' ),
-				'grievance_info' => sanitize_textarea_field( $d['grievance_info'] ?? '' ),
-			);
+			$out['dpdp'] = array();
+			foreach ( array( 'notice_text', 'purpose_text', 'rights_text', 'grievance_info' ) as $key ) {
+				if ( array_key_exists( $key, $d ) ) {
+					$out['dpdp'][ $key ] = sanitize_textarea_field( $d[ $key ] );
+				}
+			}
+			if ( array_key_exists( 'contact_email', $d ) ) {
+				$out['dpdp']['contact_email'] = sanitize_email( $d['contact_email'] );
+			}
 		}
 
 		if ( isset( $input['policies'] ) ) {
 			$p               = (array) $input['policies'];
-			$out['policies'] = array(
-				'privacy_page_id'         => absint( $p['privacy_page_id'] ?? 0 ),
-				'cookie_page_id'          => absint( $p['cookie_page_id'] ?? 0 ),
-				'policy_version'          => sanitize_text_field( $p['policy_version'] ?? '1.0' ),
-				'generated_cookie_policy' => wp_kses_post( $p['generated_cookie_policy'] ?? '' ),
-			);
+			$out['policies'] = array();
+			if ( array_key_exists( 'privacy_page_id', $p ) ) {
+				$out['policies']['privacy_page_id'] = absint( $p['privacy_page_id'] );
+			}
+			if ( array_key_exists( 'cookie_page_id', $p ) ) {
+				$out['policies']['cookie_page_id'] = absint( $p['cookie_page_id'] );
+			}
+			if ( array_key_exists( 'policy_version', $p ) ) {
+				$out['policies']['policy_version'] = sanitize_text_field( $p['policy_version'] );
+			}
+			if ( array_key_exists( 'generated_cookie_policy', $p ) ) {
+				$out['policies']['generated_cookie_policy'] = wp_kses_post( $p['generated_cookie_policy'] );
+			}
 		}
 
 		if ( isset( $input['scanner'] ) ) {
@@ -570,11 +640,7 @@ class Settings {
 		}
 
 		if ( isset( $input['advanced'] ) ) {
-			$a               = (array) $input['advanced'];
-			$out['advanced'] = array(
-				'debug'               => ! empty( $a['debug'] ),
-				'delete_on_uninstall' => ! empty( $a['delete_on_uninstall'] ),
-			);
+			$out['advanced'] = $pick_bools( (array) $input['advanced'], array( 'debug', 'delete_on_uninstall', 'respect_gpc' ) );
 		}
 
 		return $out;

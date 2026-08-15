@@ -21,7 +21,7 @@ Admin::maybe_notice();
 <table class="form-table" role="presentation">
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Enable banner', 'privacy-consent-manager' ); ?></th>
-		<td><label><input type="checkbox" name="pcm[consent][banner_enabled]" value="1" <?php checked( $settings['consent']['banner_enabled'] ); ?> /> <?php esc_html_e( 'Show the consent banner to visitors without a stored decision', 'privacy-consent-manager' ); ?></label></td>
+		<td><label><input type="hidden" name="pcm[consent][banner_enabled]" value="" /><input type="checkbox" name="pcm[consent][banner_enabled]" value="1" <?php checked( $settings['consent']['banner_enabled'] ); ?> /> <?php esc_html_e( 'Show the consent banner to visitors without a stored decision', 'privacy-consent-manager' ); ?></label></td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="pcm-banner-title"><?php esc_html_e( 'Title', 'privacy-consent-manager' ); ?></label></th>
@@ -60,6 +60,17 @@ Admin::maybe_notice();
 		</td>
 	</tr>
 	<tr>
+		<th scope="row"><?php esc_html_e( 'Theme', 'privacy-consent-manager' ); ?></th>
+		<td>
+			<select name="pcm[banner][theme]">
+				<option value="light" <?php selected( $pcm_banner['theme'] ?? 'light', 'light' ); ?>><?php esc_html_e( 'Light', 'privacy-consent-manager' ); ?></option>
+				<option value="dark" <?php selected( $pcm_banner['theme'] ?? 'light', 'dark' ); ?>><?php esc_html_e( 'Dark', 'privacy-consent-manager' ); ?></option>
+				<option value="auto" <?php selected( $pcm_banner['theme'] ?? 'light', 'auto' ); ?>><?php esc_html_e( 'Auto (follow visitor system preference)', 'privacy-consent-manager' ); ?></option>
+			</select>
+			<p class="description"><?php esc_html_e( 'Dark and Auto themes ignore the background/text color settings and use a polished dark palette; the primary color is kept.', 'privacy-consent-manager' ); ?></p>
+		</td>
+	</tr>
+	<tr>
 		<th scope="row"><?php esc_html_e( 'Animation', 'privacy-consent-manager' ); ?></th>
 		<td>
 			<select name="pcm[banner][animation]">
@@ -82,11 +93,11 @@ Admin::maybe_notice();
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Options', 'privacy-consent-manager' ); ?></th>
 		<td>
-			<p><label><input type="checkbox" name="pcm[banner][show_reject]" value="1" <?php checked( $pcm_banner['show_reject'] ); ?> /> <?php esc_html_e( 'Show "Reject All" button', 'privacy-consent-manager' ); ?></label></p>
-			<p><label><input type="checkbox" name="pcm[banner][show_close]" value="1" <?php checked( $pcm_banner['show_close'] ); ?> /> <?php esc_html_e( 'Show close button (only where legally appropriate)', 'privacy-consent-manager' ); ?></label></p>
-			<p><label><input type="checkbox" name="pcm[banner][reopen_button]" value="1" <?php checked( $pcm_banner['reopen_button'] ); ?> /> <?php esc_html_e( 'Show floating "Privacy Settings" reopen button', 'privacy-consent-manager' ); ?></label></p>
-			<p><label><input type="checkbox" name="pcm[banner][hide_in_admin]" value="1" <?php checked( $pcm_banner['hide_in_admin'] ); ?> /> <?php esc_html_e( 'Disable consent banner in WordPress Admin', 'privacy-consent-manager' ); ?></label></p>
-			<p><label><input type="checkbox" name="pcm[banner][hide_in_elementor]" value="1" <?php checked( $pcm_banner['hide_in_elementor'] ); ?> /> <?php esc_html_e( 'Disable consent banner in Elementor Editor', 'privacy-consent-manager' ); ?></label></p>
+			<p><label><input type="hidden" name="pcm[banner][show_reject]" value="" /><input type="checkbox" name="pcm[banner][show_reject]" value="1" <?php checked( $pcm_banner['show_reject'] ); ?> /> <?php esc_html_e( 'Show "Reject All" button', 'privacy-consent-manager' ); ?></label></p>
+			<p><label><input type="hidden" name="pcm[banner][show_close]" value="" /><input type="checkbox" name="pcm[banner][show_close]" value="1" <?php checked( $pcm_banner['show_close'] ); ?> /> <?php esc_html_e( 'Show close button (only where legally appropriate)', 'privacy-consent-manager' ); ?></label></p>
+			<p><label><input type="hidden" name="pcm[banner][reopen_button]" value="" /><input type="checkbox" name="pcm[banner][reopen_button]" value="1" <?php checked( $pcm_banner['reopen_button'] ); ?> /> <?php esc_html_e( 'Show floating "Privacy Settings" reopen button', 'privacy-consent-manager' ); ?></label></p>
+			<p><label><input type="hidden" name="pcm[banner][hide_in_admin]" value="" /><input type="checkbox" name="pcm[banner][hide_in_admin]" value="1" <?php checked( $pcm_banner['hide_in_admin'] ); ?> /> <?php esc_html_e( 'Disable consent banner in WordPress Admin', 'privacy-consent-manager' ); ?></label></p>
+			<p><label><input type="hidden" name="pcm[banner][hide_in_elementor]" value="" /><input type="checkbox" name="pcm[banner][hide_in_elementor]" value="1" <?php checked( $pcm_banner['hide_in_elementor'] ); ?> /> <?php esc_html_e( 'Disable consent banner in Elementor Editor', 'privacy-consent-manager' ); ?></label></p>
 		</td>
 	</tr>
 	<tr>

@@ -26,8 +26,19 @@
 	var i18n = cfg.i18n || {};
 	var listeners = [];
 	var state = null;          // category => bool, or null before any decision.
+	var implied = false;       // true while an opt-out profile implies consent without an explicit decision.
 	var anonymousId = null;
 	var ui = { banner: null, modal: null, reopen: null, lastFocus: null };
+
+	/**
+	 * Global Privacy Control: a browser-level opt-out-of-sale/share signal.
+	 * When respected (default), it keeps the marketing category denied on
+	 * blanket accepts and implied opt-out consent; an explicit marketing
+	 * toggle in the preferences modal still wins.
+	 */
+	function gpcActive() {
+		return cfg.respectGpc !== false && window.navigator && navigator.globalPrivacyControl === true;
+	}
 
 	function log() {
 		if ( window.PCMDebug ) {
@@ -133,6 +144,7 @@
 		// 3. Remove first-party tracking cookies for denied categories.
 		if ( window.PCMAnalytics ) {
 			window.PCMAnalytics.clearDeniedCookies( state );
+			window.PCMAnalytics.syncWpConsentApi( state );
 		}
 
 		// 4. Notify listeners + DOM events.
@@ -213,6 +225,7 @@
 
 	function decide( categories, action ) {
 		var previous = state ? normalize( state ) : null;
+		implied = false;
 		state = normalize( categories );
 		persist( action );
 		hideBanner();
@@ -266,6 +279,10 @@
 					all[ slug ] = true;
 				}
 			}
+			if ( gpcActive() && 'marketing' in all ) {
+				all.marketing = false;
+				log( 'Global Privacy Control detected — marketing stays denied on Accept All' );
+			}
 			decide( all, 'accept_all' );
 		},
 		rejectAll: function () {
@@ -279,6 +296,12 @@
 		},
 		getAnonymousId: function () {
 			return anonymousId;
+		},
+		isImplied: function () {
+			return implied;
+		},
+		gpcDetected: function () {
+			return gpcActive();
 		}
 	};
 
@@ -311,6 +334,7 @@
 		var banner = cfg.banner || {};
 		var wrap = el( 'div', 'pcm-banner pcm-pos-' + ( banner.position || 'bottom' ) +
 			' pcm-layout-' + ( banner.layout || 'bar' ) +
+			' pcm-theme-' + ( banner.theme || 'light' ) +
 			' pcm-anim-' + ( banner.animation || 'slide' ), {
 			role: 'dialog',
 			'aria-modal': 'false',
@@ -352,7 +376,8 @@
 		actions.appendChild( button( banner.accept_label || 'Accept All', 'pcm-btn-primary', function () {
 			window.PrivacyConsent.acceptAll();
 		} ) );
-		if ( banner.show_reject !== false && ( ! cfg.profile || cfg.profile.showRejectAll !== false ) ) {
+		var noticeOnly = cfg.profile && cfg.profile.mode === 'notice_only';
+		if ( ! noticeOnly && banner.show_reject !== false && ( ! cfg.profile || cfg.profile.showRejectAll !== false ) ) {
 			actions.appendChild( button( banner.reject_label || 'Reject All', 'pcm-btn-secondary', function () {
 				window.PrivacyConsent.rejectAll();
 			} ) );
@@ -395,7 +420,7 @@
 
 	function buildModal() {
 		var banner = cfg.banner || {};
-		var overlay = el( 'div', 'pcm-overlay', { tabindex: '-1' } );
+		var overlay = el( 'div', 'pcm-overlay pcm-theme-' + ( banner.theme || 'light' ), { tabindex: '-1' } );
 		var modal = el( 'div', 'pcm-modal', {
 			role: 'dialog',
 			'aria-modal': 'true',
@@ -537,8 +562,8 @@
 			}
 			ui.modal = null;
 		}
-		if ( state === null && cfg.shouldRender ) {
-			showBanner(); // No decision yet: banner returns.
+		if ( ( state === null || implied ) && cfg.shouldRender ) {
+			showBanner(); // No explicit decision yet: banner returns.
 		}
 		if ( ui.lastFocus && ui.lastFocus.focus ) {
 			ui.lastFocus.focus();
@@ -555,7 +580,7 @@
 		if ( banner.reopen_button === false || ui.reopen ) {
 			return;
 		}
-		ui.reopen = button( banner.reopen_label || 'Privacy Settings', 'pcm-reopen', showModal );
+		ui.reopen = button( banner.reopen_label || 'Privacy Settings', 'pcm-reopen pcm-theme-' + ( banner.theme || 'light' ), showModal );
 		ui.reopen.setAttribute( 'aria-haspopup', 'dialog' );
 		document.body.appendChild( ui.reopen );
 	}
@@ -568,10 +593,36 @@
 		state = loadState();
 		log( 'Consent initialized' );
 
+		var mode = cfg.profile && cfg.profile.mode ? cfg.profile.mode : 'opt_in';
+
 		if ( state ) {
 			applyConsent( null );
 			if ( cfg.shouldRender ) {
 				showReopen();
+			}
+		} else if ( 'opt_out' === mode || 'notice_only' === mode ) {
+			// OneTrust-style opt-out jurisdictions: the administrator has
+			// configured this region as "tracking allowed until the visitor
+			// objects". Consent is implied (never recorded as explicit) and
+			// the banner still shows so the visitor can opt out. GPC still
+			// keeps marketing denied.
+			var all = {};
+			var slug;
+			for ( slug in cfg.categories ) {
+				if ( Object.prototype.hasOwnProperty.call( cfg.categories, slug ) ) {
+					all[ slug ] = true;
+				}
+			}
+			if ( gpcActive() && 'marketing' in all ) {
+				all.marketing = false;
+				log( 'Global Privacy Control detected — marketing denied despite opt-out profile' );
+			}
+			implied = true;
+			state = normalize( all );
+			log( 'Opt-out profile "' + ( cfg.profile.key || mode ) + '": implied consent applied until the visitor decides' );
+			applyConsent( null );
+			if ( cfg.shouldRender ) {
+				showBanner();
 			}
 		} else if ( cfg.shouldRender ) {
 			showBanner();

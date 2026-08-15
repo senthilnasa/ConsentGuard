@@ -254,6 +254,97 @@ describe( 'Google Consent Mode updates', () => {
 	} );
 } );
 
+describe( 'Global Privacy Control', () => {
+	beforeEach( () => clearCookies() );
+
+	function setGpc( value ) {
+		Object.defineProperty( window.navigator, 'globalPrivacyControl', {
+			value: value,
+			configurable: true
+		} );
+	}
+
+	afterEach( () => setGpc( undefined ) );
+
+	test( 'GPC keeps marketing denied on Accept All', () => {
+		setGpc( true );
+		boot();
+		window.PrivacyConsent.acceptAll();
+		const consent = window.PrivacyConsent.getConsent();
+		expect( consent.marketing ).toBe( false );
+		expect( consent.analytics ).toBe( true );
+		expect( window.PrivacyConsent.gpcDetected() ).toBe( true );
+	} );
+
+	test( 'GPC is ignored when the admin disabled it', () => {
+		setGpc( true );
+		boot( { respectGpc: false } );
+		window.PrivacyConsent.acceptAll();
+		expect( window.PrivacyConsent.getConsent().marketing ).toBe( true );
+	} );
+
+	test( 'an explicit marketing toggle still wins over GPC', () => {
+		setGpc( true );
+		boot();
+		window.PrivacyConsent.openPreferences();
+		document.querySelector( '[data-pcm-toggle="marketing"]' ).checked = true;
+		document.querySelectorAll( '.pcm-modal .pcm-btn-primary' )[ 0 ].click();
+		expect( window.PrivacyConsent.getConsent().marketing ).toBe( true );
+	} );
+} );
+
+describe( 'jurisdiction consent modes', () => {
+	beforeEach( () => clearCookies() );
+
+	test( 'opt-out profile implies consent, still shows the banner, records nothing', () => {
+		boot( { profile: { key: 'us_optout', requireConsent: false, showRejectAll: true, granular: true, mode: 'opt_out' } } );
+		expect( window.PrivacyConsent.hasConsent( 'analytics' ) ).toBe( true );
+		expect( window.PrivacyConsent.isImplied() ).toBe( true );
+		expect( document.querySelector( '.pcm-banner.pcm-visible' ) ).not.toBeNull();
+		expect( document.cookie ).not.toContain( 'pcm_consent=' );
+	} );
+
+	test( 'explicit rejection in an opt-out region overrides implied consent', () => {
+		// Fake timers: revoking a running category schedules a page reload,
+		// which jsdom cannot perform — the timer simply never fires here.
+		jest.useFakeTimers();
+		boot( { profile: { key: 'us_optout', requireConsent: false, showRejectAll: true, granular: true, mode: 'opt_out' } } );
+		window.PrivacyConsent.rejectAll();
+		expect( window.PrivacyConsent.hasConsent( 'analytics' ) ).toBe( false );
+		expect( window.PrivacyConsent.isImplied() ).toBe( false );
+		expect( document.cookie ).toContain( 'pcm_consent=' );
+		jest.useRealTimers();
+	} );
+
+	test( 'notice-only profile hides the Reject All button on the banner', () => {
+		boot( { profile: { key: 'notice', requireConsent: false, showRejectAll: true, granular: true, mode: 'notice_only' } } );
+		const labels = Array.prototype.map.call(
+			document.querySelectorAll( '.pcm-banner .pcm-btn' ),
+			( b ) => b.textContent
+		);
+		expect( labels ).toContain( 'Accept All' );
+		expect( labels ).not.toContain( 'Reject All' );
+	} );
+} );
+
+describe( 'WP Consent API bridge', () => {
+	beforeEach( () => clearCookies() );
+
+	afterEach( () => {
+		delete window.wp_set_consent;
+	} );
+
+	test( 'consent decisions are mirrored via wp_set_consent', () => {
+		window.wp_set_consent = jest.fn();
+		boot();
+		window.PrivacyConsent.acceptAll();
+		expect( window.wp_set_consent ).toHaveBeenCalledWith( 'statistics', 'allow' );
+		expect( window.wp_set_consent ).toHaveBeenCalledWith( 'marketing', 'allow' );
+		window.PrivacyConsent.rejectAll();
+		expect( window.wp_set_consent ).toHaveBeenCalledWith( 'statistics', 'deny' );
+	} );
+} );
+
 describe( 'accessibility', () => {
 	beforeEach( () => clearCookies() );
 

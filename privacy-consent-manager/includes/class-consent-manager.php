@@ -248,6 +248,7 @@ class Consent_Manager {
 			'cookieUrl'      => ! empty( $policies['cookie_page_id'] ) ? get_permalink( (int) $policies['cookie_page_id'] ) : '',
 			'restUrl'        => esc_url_raw( rest_url( 'pcm/v1/consent' ) ),
 			'storeRecords'   => (bool) pcm_get_setting( 'consent.store_records', true ),
+			'respectGpc'     => (bool) pcm_get_setting( 'advanced.respect_gpc', true ),
 			'debug'          => (bool) pcm_get_setting( 'advanced.debug', false ),
 			'language'       => get_locale(),
 			'i18n'           => array(

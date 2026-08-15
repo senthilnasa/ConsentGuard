@@ -140,6 +140,52 @@ class Settings_Test extends TestCase {
 		$this->assertSame( array(), $settings->get( 'custom_scripts' ) );
 	}
 
+	public function test_sanitize_is_presence_based() {
+		// A form carrying only one consent field must not reset the others.
+		$out = Settings::sanitize( array( 'consent' => array( 'banner_enabled' => '1' ) ) );
+		$this->assertSame( array( 'banner_enabled' => true ), $out['consent'] );
+
+		// Unchecked checkbox posts an empty string via its hidden companion.
+		$out = Settings::sanitize( array( 'consent' => array( 'store_records' => '' ) ) );
+		$this->assertSame( array( 'store_records' => false ), $out['consent'] );
+	}
+
+	public function test_partial_update_preserves_other_section_values() {
+		$settings = Settings::instance();
+		$settings->update_section( 'consent', array( 'consent_version' => '3.0' ) );
+		$settings->update_section( 'consent', Settings::sanitize( array( 'consent' => array( 'banner_enabled' => '' ) ) )['consent'] );
+		$this->assertSame( '3.0', $settings->get( 'consent.consent_version' ) );
+		$this->assertFalse( $settings->get( 'consent.banner_enabled' ) );
+	}
+
+	public function test_sanitize_advanced_respect_gpc() {
+		$out = Settings::sanitize( array( 'advanced' => array( 'respect_gpc' => '1' ) ) );
+		$this->assertTrue( $out['advanced']['respect_gpc'] );
+		$this->assertArrayNotHasKey( 'debug', $out['advanced'] );
+	}
+
+	public function test_profile_mode_is_validated() {
+		$out = Settings::sanitize(
+			array(
+				'jurisdictions' => array(
+					'profiles' => array(
+						'us' => array( 'label' => 'US', 'mode' => 'opt_out' ),
+						'xx' => array( 'label' => 'XX', 'mode' => 'evil' ),
+					),
+				),
+			)
+		);
+		$this->assertSame( 'opt_out', $out['jurisdictions']['profiles']['us']['mode'] );
+		$this->assertSame( 'opt_in', $out['jurisdictions']['profiles']['xx']['mode'] );
+	}
+
+	public function test_banner_theme_is_validated() {
+		$out = Settings::sanitize( array( 'banner' => array( 'theme' => 'dark' ) ) );
+		$this->assertSame( 'dark', $out['banner']['theme'] );
+		$out = Settings::sanitize( array( 'banner' => array( 'theme' => 'neon' ) ) );
+		$this->assertSame( 'light', $out['banner']['theme'] );
+	}
+
 	public function test_retention_bounds() {
 		$out = Settings::sanitize( array( 'consent' => array( 'retention_days' => 5 ) ) );
 		$this->assertSame( 30, $out['consent']['retention_days'] );

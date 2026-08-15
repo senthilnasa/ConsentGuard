@@ -73,7 +73,7 @@ foreach ( $pcm_rows as $pcm_i => $pcm_script ) :
 			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Enabled', 'privacy-consent-manager' ); ?></th>
-				<td><input type="checkbox" name="pcm[custom_scripts][<?php echo esc_attr( $pcm_i ); ?>][enabled]" value="1" <?php checked( ! empty( $pcm_script['enabled'] ) ); ?> /></td>
+				<td><input type="hidden" name="pcm[custom_scripts][<?php echo esc_attr( $pcm_i ); ?>][enabled]" value="" /><input type="checkbox" name="pcm[custom_scripts][<?php echo esc_attr( $pcm_i ); ?>][enabled]" value="1" <?php checked( ! empty( $pcm_script['enabled'] ) ); ?> /></td>
 			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Script', 'privacy-consent-manager' ); ?></th>

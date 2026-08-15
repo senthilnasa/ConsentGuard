@@ -81,7 +81,16 @@ PrivacyConsent.rejectAll();
 PrivacyConsent.withdraw();
 PrivacyConsent.openPreferences();
 PrivacyConsent.getAnonymousId();        // UUID or null
+PrivacyConsent.isImplied();             // true while an opt-out profile implies consent
+PrivacyConsent.gpcDetected();           // Global Privacy Control active and respected
 ```
+
+The `[pcm_privacy_settings label="..."]` shortcode (or any element with the
+`pcm-open-preferences` class) reopens the preferences modal.
+
+When the wp-consent-api plugin is active, decisions are mirrored via
+`wp_set_consent()` (analytics → `statistics`; functional/marketing/
+preferences map 1:1).
 
 DOM events on `document` (detail = consent map):
 `privacy_consent_ready`, `privacy_consent_changed`,
