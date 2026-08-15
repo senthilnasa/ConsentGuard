@@ -1,4 +1,4 @@
-# Privacy & Consent Manager
+# PrivacyPress
 
 A free, open-source, self-hosted **privacy, consent, analytics and tracking
 management platform for WordPress** — a community alternative to hosted CMPs
@@ -8,7 +8,7 @@ vendor lock-in.
 > **One website → one centralized consent decision → one source of truth for
 > analytics and tracking.**
 
-The plugin lives in [`privacy-consent-manager/`](privacy-consent-manager/).
+The plugin lives in [`privacypress/`](privacypress/).
 
 ## Highlights
 
@@ -40,16 +40,16 @@ The plugin lives in [`privacy-consent-manager/`](privacy-consent-manager/).
 
 ## Quick start
 
-1. Copy `privacy-consent-manager/` into `wp-content/plugins/` and activate.
-2. Configure under **Privacy & Consent** in wp-admin.
-3. Full guides: [Installation](privacy-consent-manager/docs/INSTALL.md) ·
-   [Admin Guide](privacy-consent-manager/docs/ADMIN-GUIDE.md) ·
-   [Developer Docs](privacy-consent-manager/docs/DEVELOPER.md)
+1. Copy `privacypress/` into `wp-content/plugins/` and activate.
+2. Configure under **PrivacyPress** in wp-admin.
+3. Full guides: [Installation](privacypress/docs/INSTALL.md) ·
+   [Admin Guide](privacypress/docs/ADMIN-GUIDE.md) ·
+   [Developer Docs](privacypress/docs/DEVELOPER.md)
 
 ## Development
 
 ```bash
-cd privacy-consent-manager
+cd privacypress
 composer install && npm install
 composer test    # PHPUnit
 npm test         # Jest
@@ -57,8 +57,8 @@ composer lint    # WordPress coding standards
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Security policy and privacy design:
-[SECURITY.md](privacy-consent-manager/docs/SECURITY.md) ·
-[PRIVACY.md](privacy-consent-manager/docs/PRIVACY.md).
+[SECURITY.md](privacypress/docs/SECURITY.md) ·
+[PRIVACY.md](privacypress/docs/PRIVACY.md).
 
 ## Legal note
 
