@@ -1,0 +1,61 @@
+# Local WordPress test environment for PrivacyPress.
+#
+#   docker compose up -d          # start WordPress + MariaDB on http://localhost:9080
+#   docker compose run --rm wpcli <wp command>
+#   docker compose down           # stop (add -v to also wipe the data)
+#
+# The plugin directory is bind-mounted, so code edits apply instantly.
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    image: wordpress:6.8-php8.2-apache
+    ports:
+      - "9080:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      - wp_data:/var/www/html
+      - ./privacypress:/var/www/html/wp-content/plugins/privacypress
+    depends_on:
+      db:
+        condition: service_healthy
+
+  wpcli:
+    image: wordpress:cli
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp_data:/var/www/html
+      - ./privacypress:/var/www/html/wp-content/plugins/privacypress
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - cli
+
+volumes:
+  db_data:
+  wp_data:
