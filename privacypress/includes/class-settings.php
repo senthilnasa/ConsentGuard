@@ -73,6 +73,11 @@ class Settings {
 				'show_close'        => false,
 				'show_reject'       => true,
 				'reopen_button'     => true,
+				'reopen_icon_url'   => '',            // Custom logo for the floating widget.
+				'reopen_position'   => 'bottom-left', // bottom-left | bottom-right | top-left | top-right.
+				'reopen_draggable'  => true,
+				'use_theme_colors'  => true,          // Derive colors from the active theme palette.
+				'preferences_intro' => __( 'We use cookies to help you navigate efficiently and perform certain functions. You will find detailed information about all cookies under each consent category below.', 'privacypress' ),
 				'logo_url'          => '',
 				'primary_color'     => '#1a73e8',
 				'text_color'        => '#1f2937',
@@ -114,6 +119,7 @@ class Settings {
 				'category'     => 'marketing',
 			),
 			'custom_scripts' => array(),
+			'cookies'       => self::default_cookie_inventory(),
 			'blocker'       => array(
 				'enabled'   => true,
 				'domains'   => self::default_blocked_domains(),
@@ -190,6 +196,66 @@ class Settings {
 				'required'    => false,
 				'builtin'     => true,
 			),
+		);
+	}
+
+	/**
+	 * Curated cookie inventory shown in the preferences modal, grouped by
+	 * category. Administrators edit this on the Consent Categories screen;
+	 * entries cover the cookies set by the trackers this plugin manages.
+	 *
+	 * @return array<string, array[]> category => [{name, duration, description}].
+	 */
+	public static function default_cookie_inventory() {
+		return array(
+			'necessary'   => array(
+				array(
+					'name'        => 'pcm_consent',
+					'duration'    => __( '180 days', 'privacypress' ),
+					'description' => __( 'Stores the visitor\'s consent preferences for this website (set by PrivacyPress).', 'privacypress' ),
+				),
+				array(
+					'name'        => 'wordpress_test_cookie',
+					'duration'    => __( 'Session', 'privacypress' ),
+					'description' => __( 'WordPress sets this cookie to check whether the browser accepts cookies.', 'privacypress' ),
+				),
+			),
+			'functional'  => array(),
+			'analytics'   => array(
+				array(
+					'name'        => '_ga',
+					'duration'    => __( '1 year 1 month 4 days', 'privacypress' ),
+					'description' => __( 'Google Analytics sets this cookie to calculate visitor, session and campaign data. It stores information anonymously and assigns a randomly generated number to recognise unique visitors.', 'privacypress' ),
+				),
+				array(
+					'name'        => '_ga_*',
+					'duration'    => __( '1 year 1 month 4 days', 'privacypress' ),
+					'description' => __( 'Google Analytics sets this cookie to store and count page views.', 'privacypress' ),
+				),
+				array(
+					'name'        => '_clck',
+					'duration'    => __( '1 year', 'privacypress' ),
+					'description' => __( 'Microsoft Clarity sets this cookie to persist the Clarity user ID and preferences unique to this site.', 'privacypress' ),
+				),
+				array(
+					'name'        => '_clsk',
+					'duration'    => __( '1 day', 'privacypress' ),
+					'description' => __( 'Microsoft Clarity sets this cookie to connect multiple page views by a user into a single session recording.', 'privacypress' ),
+				),
+			),
+			'marketing'   => array(
+				array(
+					'name'        => '_gcl_au',
+					'duration'    => __( '3 months', 'privacypress' ),
+					'description' => __( 'Google Tag Manager sets this cookie to measure advertisement efficiency of websites using its services.', 'privacypress' ),
+				),
+				array(
+					'name'        => '_fbp',
+					'duration'    => __( '3 months', 'privacypress' ),
+					'description' => __( 'Facebook sets this cookie to store and track interactions for advertising.', 'privacypress' ),
+				),
+			),
+			'preferences' => array(),
 		);
 	}
 
@@ -307,7 +373,7 @@ class Settings {
 		);
 
 		// Replace-style keys where merging would resurrect deleted entries.
-		$replace = array( 'custom_scripts', 'categories' );
+		$replace = array( 'custom_scripts', 'categories', 'cookies' );
 		if ( in_array( $section, $replace, true ) ) {
 			$all[ $section ] = $values;
 		}
@@ -416,13 +482,14 @@ class Settings {
 
 		if ( isset( $input['banner'] ) ) {
 			$b             = (array) $input['banner'];
-			$out['banner'] = $pick_bools( $b, array( 'show_close', 'show_reject', 'reopen_button', 'hide_in_admin', 'hide_in_elementor' ) );
+			$out['banner'] = $pick_bools( $b, array( 'show_close', 'show_reject', 'reopen_button', 'reopen_draggable', 'use_theme_colors', 'hide_in_admin', 'hide_in_elementor' ) );
 
 			$enums = array(
-				'position'  => array( array( 'bottom', 'top', 'bottom-left', 'bottom-right', 'center' ), 'bottom' ),
-				'layout'    => array( array( 'bar', 'box' ), 'bar' ),
-				'animation' => array( array( 'slide', 'fade', 'none' ), 'slide' ),
-				'theme'     => array( array( 'light', 'dark', 'auto' ), 'light' ),
+				'position'        => array( array( 'bottom', 'top', 'bottom-left', 'bottom-right', 'center' ), 'bottom' ),
+				'layout'          => array( array( 'bar', 'box' ), 'bar' ),
+				'animation'       => array( array( 'slide', 'fade', 'none' ), 'slide' ),
+				'theme'           => array( array( 'light', 'dark', 'auto' ), 'light' ),
+				'reopen_position' => array( array( 'bottom-left', 'bottom-right', 'top-left', 'top-right' ), 'bottom-left' ),
 			);
 			foreach ( $enums as $key => $enum ) {
 				if ( array_key_exists( $key, $b ) ) {
@@ -438,8 +505,14 @@ class Settings {
 			if ( array_key_exists( 'message', $b ) ) {
 				$out['banner']['message'] = sanitize_textarea_field( $b['message'] );
 			}
+			if ( array_key_exists( 'preferences_intro', $b ) ) {
+				$out['banner']['preferences_intro'] = sanitize_textarea_field( $b['preferences_intro'] );
+			}
 			if ( array_key_exists( 'logo_url', $b ) ) {
 				$out['banner']['logo_url'] = esc_url_raw( $b['logo_url'] );
+			}
+			if ( array_key_exists( 'reopen_icon_url', $b ) ) {
+				$out['banner']['reopen_icon_url'] = esc_url_raw( $b['reopen_icon_url'] );
 			}
 
 			$colors = array(
@@ -532,6 +605,29 @@ class Settings {
 				);
 			}
 			$out['custom_scripts'] = $scripts;
+		}
+
+		if ( isset( $input['cookies'] ) && is_array( $input['cookies'] ) ) {
+			$inventory = array();
+			foreach ( $input['cookies'] as $category => $rows ) {
+				$category = pcm_sanitize_category_slug( $category );
+				if ( '' === $category ) {
+					continue;
+				}
+				$inventory[ $category ] = array();
+				foreach ( (array) $rows as $row ) {
+					$name = sanitize_text_field( $row['name'] ?? '' );
+					if ( '' === $name ) {
+						continue;
+					}
+					$inventory[ $category ][] = array(
+						'name'        => $name,
+						'duration'    => sanitize_text_field( $row['duration'] ?? '' ),
+						'description' => sanitize_textarea_field( $row['description'] ?? '' ),
+					);
+				}
+			}
+			$out['cookies'] = $inventory;
 		}
 
 		if ( isset( $input['blocker'] ) ) {

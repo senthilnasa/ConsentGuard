@@ -11,6 +11,7 @@
  *   .hasConsent('analytics') -> bool
  *   .onChange(cb)            -> unsubscribe fn
  *   .openPreferences() / .acceptAll() / .rejectAll() / .withdraw()
+ *   .isImplied() / .gpcDetected() / .getAnonymousId()
  *
  * DOM events on document:
  *   privacy_consent_ready, privacy_consent_changed,
@@ -306,7 +307,7 @@
 	};
 
 	/* ------------------------------------------------------------------ *
-	 * UI — banner
+	 * UI — helpers
 	 * ------------------------------------------------------------------ */
 
 	function el( tag, className, attrs ) {
@@ -330,11 +331,19 @@
 		return b;
 	}
 
+	function themeClass() {
+		return 'pcm-theme-' + ( ( cfg.banner && cfg.banner.theme ) || 'light' );
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * UI — banner
+	 * ------------------------------------------------------------------ */
+
 	function buildBanner() {
 		var banner = cfg.banner || {};
 		var wrap = el( 'div', 'pcm-banner pcm-pos-' + ( banner.position || 'bottom' ) +
 			' pcm-layout-' + ( banner.layout || 'bar' ) +
-			' pcm-theme-' + ( banner.theme || 'light' ) +
+			' ' + themeClass() +
 			' pcm-anim-' + ( banner.animation || 'slide' ), {
 			role: 'dialog',
 			'aria-modal': 'false',
@@ -415,66 +424,178 @@
 	}
 
 	/* ------------------------------------------------------------------ *
-	 * UI — preferences modal (focus-trapped, ESC to close)
+	 * UI — preferences modal (accordion detail view, focus-trapped)
 	 * ------------------------------------------------------------------ */
+
+	function buildIntro() {
+		var banner = cfg.banner || {};
+		var intro = el( 'div', 'pcm-intro' );
+		var text = banner.preferences_intro || banner.message || '';
+		var p = el( 'p', 'pcm-intro-text', { id: 'pcm-intro-text' } );
+		p.textContent = text;
+		intro.appendChild( p );
+
+		if ( text.length > 180 ) {
+			p.classList.add( 'pcm-clamped' );
+			var more = el( 'button', 'pcm-show-more', {
+				type: 'button',
+				'aria-expanded': 'false',
+				'aria-controls': 'pcm-intro-text'
+			} );
+			more.textContent = i18n.showMore || 'Show more';
+			more.addEventListener( 'click', function () {
+				var expanded = p.classList.toggle( 'pcm-clamped' ) === false;
+				more.setAttribute( 'aria-expanded', expanded ? 'true' : 'false' );
+				more.textContent = expanded ? ( i18n.showLess || 'Show less' ) : ( i18n.showMore || 'Show more' );
+			} );
+			intro.appendChild( more );
+		}
+		return intro;
+	}
+
+	function buildCookieTable( slug ) {
+		var table = el( 'div', 'pcm-audit-table' );
+		var rows = ( cfg.cookies && cfg.cookies[ slug ] ) || [];
+		var services = ( cfg.services && cfg.services[ slug ] ) || [];
+		var i, row, list, fields, f, li, k, v;
+
+		for ( i = 0; i < rows.length; i++ ) {
+			row = rows[ i ];
+			list = el( 'ul', 'pcm-cookie-row' );
+			fields = [
+				[ i18n.cookie || 'Cookie', row.name || '' ],
+				[ i18n.duration || 'Duration', row.duration || '-' ],
+				[ i18n.description || 'Description', row.description || '-' ]
+			];
+			for ( f = 0; f < fields.length; f++ ) {
+				li = el( 'li' );
+				k = el( 'div', 'pcm-cookie-key' );
+				k.textContent = fields[ f ][ 0 ];
+				v = el( 'div', 'pcm-cookie-val' );
+				v.textContent = fields[ f ][ 1 ];
+				li.appendChild( k );
+				li.appendChild( v );
+				list.appendChild( li );
+			}
+			table.appendChild( list );
+		}
+
+		if ( services.length ) {
+			var svc = el( 'p', 'pcm-services-line' );
+			svc.textContent = ( i18n.managedServices || 'Managed services' ) + ': ' + services.join( ', ' );
+			table.appendChild( svc );
+		}
+
+		if ( ! rows.length && ! services.length ) {
+			var none = el( 'p', 'pcm-services-line' );
+			none.textContent = i18n.noCookies || 'No cookies to display for this category.';
+			table.appendChild( none );
+		}
+		return table;
+	}
+
+	function buildAccordion( slug, category, first ) {
+		var acc = el( 'div', 'pcm-accordion' + ( first ? ' pcm-open' : '' ), { id: 'pcm-acc-' + slug } );
+		var head = el( 'div', 'pcm-accordion-head' );
+		var bodyId = 'pcm-acc-body-' + slug;
+
+		var expander = el( 'button', 'pcm-accordion-btn', {
+			type: 'button',
+			'aria-expanded': first ? 'true' : 'false',
+			'aria-controls': bodyId
+		} );
+		expander.setAttribute( 'aria-label', ( i18n.expandCategory || 'Show cookie details for' ) + ' ' + category.label );
+		var chevron = el( 'span', 'pcm-chevron', { 'aria-hidden': 'true' } );
+		var labelSpan = el( 'span', 'pcm-category-label', { id: 'pcm-cat-' + slug } );
+		labelSpan.textContent = category.label;
+		expander.appendChild( chevron );
+		expander.appendChild( labelSpan );
+		head.appendChild( expander );
+
+		if ( category.required ) {
+			var always = el( 'span', 'pcm-always-active' );
+			always.textContent = i18n.alwaysActive || 'Always Active';
+			head.appendChild( always );
+		} else {
+			var toggle = el( 'label', 'pcm-toggle' );
+			var input = el( 'input', '', {
+				type: 'checkbox',
+				role: 'switch',
+				'data-pcm-toggle': slug,
+				'aria-labelledby': 'pcm-cat-' + slug
+			} );
+			input.checked = !! ( state && state[ slug ] );
+			var slider = el( 'span', 'pcm-slider', { 'aria-hidden': 'true' } );
+			toggle.appendChild( input );
+			toggle.appendChild( slider );
+			head.appendChild( toggle );
+		}
+		acc.appendChild( head );
+
+		var desc = el( 'p', 'pcm-category-desc' );
+		desc.textContent = category.description;
+		acc.appendChild( desc );
+
+		var body = el( 'div', 'pcm-accordion-body', { id: bodyId } );
+		body.appendChild( buildCookieTable( slug ) );
+		acc.appendChild( body );
+
+		expander.addEventListener( 'click', function () {
+			var open = acc.classList.toggle( 'pcm-open' );
+			expander.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+		} );
+
+		return acc;
+	}
 
 	function buildModal() {
 		var banner = cfg.banner || {};
-		var overlay = el( 'div', 'pcm-overlay pcm-theme-' + ( banner.theme || 'light' ), { tabindex: '-1' } );
+		var overlay = el( 'div', 'pcm-overlay ' + themeClass(), { tabindex: '-1' } );
 		var modal = el( 'div', 'pcm-modal', {
 			role: 'dialog',
 			'aria-modal': 'true',
 			'aria-labelledby': 'pcm-modal-title'
 		} );
 
+		// Header.
+		var header = el( 'div', 'pcm-modal-header' );
+		if ( banner.logo_url ) {
+			var logo = el( 'img', 'pcm-modal-logo', { src: banner.logo_url, alt: '' } );
+			header.appendChild( logo );
+		}
 		var title = el( 'h2', 'pcm-title', { id: 'pcm-modal-title' } );
-		title.textContent = i18n.preferencesTitle || 'Privacy Preferences';
-		modal.appendChild( title );
+		title.textContent = i18n.preferencesTitle || 'Customise Consent Preferences';
+		header.appendChild( title );
+		var close = button( '×', 'pcm-close', hideModal );
+		close.setAttribute( 'aria-label', i18n.close || 'Close' );
+		header.appendChild( close );
+		modal.appendChild( header );
 
-		var list = el( 'div', 'pcm-categories' );
-		var slug, category, row, head, label, always, toggle, input, slider, desc;
+		// Scrollable body.
+		var body = el( 'div', 'pcm-modal-body' );
+		body.appendChild( buildIntro() );
 
+		var list = el( 'div', 'pcm-accordions' );
+		var slug, first = true;
 		for ( slug in cfg.categories ) {
 			if ( ! Object.prototype.hasOwnProperty.call( cfg.categories, slug ) ) {
 				continue;
 			}
-			category = cfg.categories[ slug ];
-
-			row = el( 'div', 'pcm-category' );
-			head = el( 'div', 'pcm-category-head' );
-
-			label = el( 'span', 'pcm-category-label', { id: 'pcm-cat-' + slug } );
-			label.textContent = category.label;
-			head.appendChild( label );
-
-			if ( category.required ) {
-				always = el( 'span', 'pcm-always-active' );
-				always.textContent = i18n.alwaysActive || 'Always Active';
-				head.appendChild( always );
-			} else {
-				toggle = el( 'label', 'pcm-toggle' );
-				input = el( 'input', '', {
-					type: 'checkbox',
-					'data-pcm-toggle': slug,
-					'aria-labelledby': 'pcm-cat-' + slug
-				} );
-				input.checked = !! ( state && state[ slug ] );
-				slider = el( 'span', 'pcm-slider', { 'aria-hidden': 'true' } );
-				toggle.appendChild( input );
-				toggle.appendChild( slider );
-				head.appendChild( toggle );
-			}
-			row.appendChild( head );
-
-			desc = el( 'p', 'pcm-category-desc' );
-			desc.textContent = category.description;
-			row.appendChild( desc );
-
-			list.appendChild( row );
+			list.appendChild( buildAccordion( slug, cfg.categories[ slug ], first ) );
+			first = false;
 		}
-		modal.appendChild( list );
+		body.appendChild( list );
+		modal.appendChild( body );
 
+		// Footer.
+		var footer = el( 'div', 'pcm-modal-footer' );
 		var actions = el( 'div', 'pcm-actions' );
+		var noticeOnly = cfg.profile && cfg.profile.mode === 'notice_only';
+		if ( banner.show_reject !== false && ! noticeOnly ) {
+			actions.appendChild( button( banner.reject_label || 'Reject All', 'pcm-btn-secondary', function () {
+				window.PrivacyConsent.rejectAll();
+			} ) );
+		}
 		actions.appendChild( button( banner.save_label || 'Save Preferences', 'pcm-btn-primary', function () {
 			var chosen = {};
 			var inputs = modal.querySelectorAll( '[data-pcm-toggle]' );
@@ -484,25 +605,17 @@
 			}
 			decide( chosen, 'custom' );
 		} ) );
-		actions.appendChild( button( banner.accept_label || 'Accept All', 'pcm-btn-secondary', function () {
+		actions.appendChild( button( banner.accept_label || 'Accept All', 'pcm-btn-secondary pcm-btn-accent', function () {
 			window.PrivacyConsent.acceptAll();
 		} ) );
-		if ( banner.show_reject !== false ) {
-			actions.appendChild( button( banner.reject_label || 'Reject All', 'pcm-btn-secondary', function () {
-				window.PrivacyConsent.rejectAll();
-			} ) );
-		}
-		modal.appendChild( actions );
-
-		var close = button( '×', 'pcm-close', hideModal );
-		close.setAttribute( 'aria-label', i18n.close || 'Close' );
-		modal.appendChild( close );
+		footer.appendChild( actions );
 
 		if ( anonymousId ) {
 			var idNote = el( 'p', 'pcm-consent-id' );
 			idNote.textContent = ( i18n.consentId || 'Consent ID' ) + ': ' + anonymousId;
-			modal.appendChild( idNote );
+			footer.appendChild( idNote );
 		}
+		modal.appendChild( footer );
 
 		overlay.appendChild( modal );
 
@@ -519,14 +632,14 @@
 			if ( ! focusable.length ) {
 				return;
 			}
-			var first = focusable[ 0 ];
+			var firstNode = focusable[ 0 ];
 			var last = focusable[ focusable.length - 1 ];
-			if ( e.shiftKey && document.activeElement === first ) {
+			if ( e.shiftKey && document.activeElement === firstNode ) {
 				e.preventDefault();
 				last.focus();
 			} else if ( ! e.shiftKey && document.activeElement === last ) {
 				e.preventDefault();
-				first.focus();
+				firstNode.focus();
 			}
 		} );
 
@@ -572,17 +685,138 @@
 	}
 
 	/* ------------------------------------------------------------------ *
-	 * UI — reopen button
+	 * UI — floating revisit widget (icon button, draggable)
 	 * ------------------------------------------------------------------ */
+
+	var REOPEN_POS_KEY = 'pcmReopenPos';
+
+	function defaultReopenIcon() {
+		var span = el( 'span', 'pcm-reopen-icon', { 'aria-hidden': 'true' } );
+		// Inline cookie glyph — no external asset needed.
+		span.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+			'<path d="M21.9 11.1a1 1 0 0 0-1.1-.8 3 3 0 0 1-3.3-2.6 1 1 0 0 0-.9-.9A3 3 0 0 1 14 3.6a1 1 0 0 0-.9-1.2A10 10 0 1 0 22 12c0-.3 0-.6-.1-.9Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+			'<circle cx="8.5" cy="10" r="1.2" fill="currentColor"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.8" cy="11.5" r="1.2" fill="currentColor"/><circle cx="8.8" cy="15.2" r="0.9" fill="currentColor"/>' +
+			'</svg>';
+		return span;
+	}
+
+	function savedReopenPosition() {
+		try {
+			var raw = window.localStorage.getItem( REOPEN_POS_KEY );
+			if ( ! raw ) {
+				return null;
+			}
+			var pos = JSON.parse( raw );
+			if ( typeof pos.x === 'number' && typeof pos.y === 'number' ) {
+				return pos;
+			}
+		} catch ( e ) { /* Private mode etc. */ }
+		return null;
+	}
+
+	function clampReopen( value, max ) {
+		return Math.min( Math.max( value, 8 ), max );
+	}
+
+	function applyReopenPosition( node, pos ) {
+		node.style.left = clampReopen( pos.x, window.innerWidth - node.offsetWidth - 8 ) + 'px';
+		node.style.top = clampReopen( pos.y, window.innerHeight - node.offsetHeight - 8 ) + 'px';
+		node.style.right = 'auto';
+		node.style.bottom = 'auto';
+	}
+
+	function makeDraggable( node ) {
+		var dragging = false;
+		var moved = false;
+		var offsetX = 0;
+		var offsetY = 0;
+
+		node.addEventListener( 'pointerdown', function ( e ) {
+			dragging = true;
+			moved = false;
+			var rect = node.getBoundingClientRect();
+			offsetX = e.clientX - rect.left;
+			offsetY = e.clientY - rect.top;
+			if ( node.setPointerCapture && e.pointerId !== undefined ) {
+				try {
+					node.setPointerCapture( e.pointerId );
+				} catch ( err ) { /* older browsers */ }
+			}
+		} );
+
+		node.addEventListener( 'pointermove', function ( e ) {
+			if ( ! dragging ) {
+				return;
+			}
+			var x = e.clientX - offsetX;
+			var y = e.clientY - offsetY;
+			if ( ! moved && Math.abs( e.movementX || 1 ) + Math.abs( e.movementY || 1 ) < 2 ) {
+				return;
+			}
+			moved = true;
+			node.classList.add( 'pcm-dragging' );
+			applyReopenPosition( node, { x: x, y: y } );
+		} );
+
+		node.addEventListener( 'pointerup', function () {
+			if ( ! dragging ) {
+				return;
+			}
+			dragging = false;
+			node.classList.remove( 'pcm-dragging' );
+			if ( moved ) {
+				try {
+					window.localStorage.setItem( REOPEN_POS_KEY, JSON.stringify( {
+						x: parseInt( node.style.left, 10 ) || 8,
+						y: parseInt( node.style.top, 10 ) || 8
+					} ) );
+				} catch ( e ) { /* ignore */ }
+				// Swallow the click that follows a drag.
+				var swallow = function ( ev ) {
+					ev.stopPropagation();
+					ev.preventDefault();
+					node.removeEventListener( 'click', swallow, true );
+				};
+				node.addEventListener( 'click', swallow, true );
+			}
+		} );
+	}
 
 	function showReopen() {
 		var banner = cfg.banner || {};
 		if ( banner.reopen_button === false || ui.reopen ) {
 			return;
 		}
-		ui.reopen = button( banner.reopen_label || 'Privacy Settings', 'pcm-reopen pcm-theme-' + ( banner.theme || 'light' ), showModal );
-		ui.reopen.setAttribute( 'aria-haspopup', 'dialog' );
-		document.body.appendChild( ui.reopen );
+
+		var wrap = el(
+			'div',
+			'pcm-reopen pcm-reopen-' + ( banner.reopen_position || 'bottom-left' ) + ' ' + themeClass(),
+			{ 'data-pcm-tooltip': banner.reopen_label || 'Privacy Settings' }
+		);
+
+		var btn = el( 'button', 'pcm-reopen-btn', {
+			type: 'button',
+			'aria-haspopup': 'dialog',
+			'aria-label': banner.reopen_label || 'Privacy Settings'
+		} );
+		if ( banner.reopen_icon_url ) {
+			btn.appendChild( el( 'img', 'pcm-reopen-img', { src: banner.reopen_icon_url, alt: '' } ) );
+		} else {
+			btn.appendChild( defaultReopenIcon() );
+		}
+		btn.addEventListener( 'click', showModal );
+		wrap.appendChild( btn );
+
+		var saved = savedReopenPosition();
+		document.body.appendChild( wrap );
+		if ( saved ) {
+			applyReopenPosition( wrap, saved );
+		}
+		if ( banner.reopen_draggable !== false ) {
+			makeDraggable( wrap );
+		}
+
+		ui.reopen = wrap;
 	}
 
 	/* ------------------------------------------------------------------ *

@@ -179,6 +179,42 @@ class Settings_Test extends TestCase {
 		$this->assertSame( 'opt_in', $out['jurisdictions']['profiles']['xx']['mode'] );
 	}
 
+	public function test_sanitize_cookie_inventory() {
+		$out = Settings::sanitize(
+			array(
+				'cookies' => array(
+					'analytics' => array(
+						array( 'name' => '_ga', 'duration' => '1 year', 'description' => '<b>GA</b> cookie' ),
+						array( 'name' => '', 'duration' => 'x', 'description' => 'dropped' ),
+					),
+					'Bad Cat!'  => array( array( 'name' => 'x' ) ),
+				),
+			)
+		);
+		$this->assertCount( 1, $out['cookies']['analytics'] );
+		$this->assertSame( '_ga', $out['cookies']['analytics'][0]['name'] );
+		$this->assertStringNotContainsString( '<b>', $out['cookies']['analytics'][0]['description'] );
+		$this->assertArrayHasKey( 'badcat', $out['cookies'] );
+	}
+
+	public function test_sanitize_reopen_widget_settings() {
+		$out = Settings::sanitize(
+			array(
+				'banner' => array(
+					'reopen_position' => 'top-right',
+					'reopen_icon_url' => 'https://example.test/icon.png',
+					'reopen_draggable' => '1',
+				),
+			)
+		);
+		$this->assertSame( 'top-right', $out['banner']['reopen_position'] );
+		$this->assertSame( 'https://example.test/icon.png', $out['banner']['reopen_icon_url'] );
+		$this->assertTrue( $out['banner']['reopen_draggable'] );
+
+		$out = Settings::sanitize( array( 'banner' => array( 'reopen_position' => 'middle' ) ) );
+		$this->assertSame( 'bottom-left', $out['banner']['reopen_position'] );
+	}
+
 	public function test_banner_theme_is_validated() {
 		$out = Settings::sanitize( array( 'banner' => array( 'theme' => 'dark' ) ) );
 		$this->assertSame( 'dark', $out['banner']['theme'] );

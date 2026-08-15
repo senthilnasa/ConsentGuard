@@ -32,6 +32,19 @@ Admin::maybe_notice();
 		<td><textarea id="pcm-banner-message" class="large-text" rows="3" name="pcm[banner][message]"><?php echo esc_textarea( $pcm_banner['message'] ); ?></textarea></td>
 	</tr>
 	<tr>
+		<th scope="row"><label for="pcm-preferences-intro"><?php esc_html_e( 'Preferences modal introduction', 'privacypress' ); ?></label></th>
+		<td>
+			<textarea id="pcm-preferences-intro" class="large-text" rows="3" name="pcm[banner][preferences_intro]"><?php echo esc_textarea( $pcm_banner['preferences_intro'] ?? '' ); ?></textarea>
+			<p class="description"><?php esc_html_e( 'Shown at the top of the Customise Consent Preferences modal. Long texts collapse behind a "Show more" link automatically.', 'privacypress' ); ?></p>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><?php esc_html_e( 'Match site theme', 'privacypress' ); ?></th>
+		<td>
+			<label><input type="hidden" name="pcm[banner][use_theme_colors]" value="" /><input type="checkbox" name="pcm[banner][use_theme_colors]" value="1" <?php checked( ! empty( $pcm_banner['use_theme_colors'] ) ); ?> /> <?php esc_html_e( 'Derive the primary/background/text colors from the active theme\'s palette (block themes). The colors below act as fallback.', 'privacypress' ); ?></label>
+		</td>
+	</tr>
+	<tr>
 		<th scope="row"><?php esc_html_e( 'Position', 'privacypress' ); ?></th>
 		<td>
 			<select name="pcm[banner][position]">
@@ -119,7 +132,45 @@ Admin::maybe_notice();
 	</tr>
 	<tr>
 		<th scope="row"><label for="pcm-logo"><?php esc_html_e( 'Logo URL', 'privacypress' ); ?></label></th>
-		<td><input id="pcm-logo" type="url" class="regular-text" name="pcm[banner][logo_url]" value="<?php echo esc_attr( $pcm_banner['logo_url'] ); ?>" /></td>
+		<td><input id="pcm-logo" type="url" class="regular-text" name="pcm[banner][logo_url]" value="<?php echo esc_attr( $pcm_banner['logo_url'] ); ?>" />
+		<p class="description"><?php esc_html_e( 'Shown in the banner and in the preferences modal header.', 'privacypress' ); ?></p></td>
+	</tr>
+</table>
+
+<h2><?php esc_html_e( 'Floating Revisit Widget', 'privacypress' ); ?></h2>
+<table class="form-table" role="presentation">
+	<tr>
+		<th scope="row"><?php esc_html_e( 'Show widget', 'privacypress' ); ?></th>
+		<td><label><input type="hidden" name="pcm[banner][reopen_button]" value="" /><input type="checkbox" name="pcm[banner][reopen_button]" value="1" <?php checked( $pcm_banner['reopen_button'] ); ?> /> <?php esc_html_e( 'Show the floating consent-revisit button after a decision was made', 'privacypress' ); ?></label></td>
+	</tr>
+	<tr>
+		<th scope="row"><?php esc_html_e( 'Default position', 'privacypress' ); ?></th>
+		<td>
+			<select name="pcm[banner][reopen_position]">
+				<?php
+				$pcm_reopen_positions = array(
+					'bottom-left'  => __( 'Bottom left', 'privacypress' ),
+					'bottom-right' => __( 'Bottom right', 'privacypress' ),
+					'top-left'     => __( 'Top left', 'privacypress' ),
+					'top-right'    => __( 'Top right', 'privacypress' ),
+				);
+				foreach ( $pcm_reopen_positions as $pcm_value => $pcm_label ) :
+					?>
+					<option value="<?php echo esc_attr( $pcm_value ); ?>" <?php selected( $pcm_banner['reopen_position'] ?? 'bottom-left', $pcm_value ); ?>><?php echo esc_html( $pcm_label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><?php esc_html_e( 'Draggable', 'privacypress' ); ?></th>
+		<td><label><input type="hidden" name="pcm[banner][reopen_draggable]" value="" /><input type="checkbox" name="pcm[banner][reopen_draggable]" value="1" <?php checked( ! empty( $pcm_banner['reopen_draggable'] ) ); ?> /> <?php esc_html_e( 'Let visitors drag the widget anywhere on screen (their position is remembered in their browser)', 'privacypress' ); ?></label></td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="pcm-reopen-icon"><?php esc_html_e( 'Widget logo URL', 'privacypress' ); ?></label></th>
+		<td>
+			<input id="pcm-reopen-icon" type="url" class="regular-text" name="pcm[banner][reopen_icon_url]" value="<?php echo esc_attr( $pcm_banner['reopen_icon_url'] ?? '' ); ?>" />
+			<p class="description"><?php esc_html_e( 'Optional custom icon/logo for the widget. Leave empty for the built-in cookie icon.', 'privacypress' ); ?></p>
+		</td>
 	</tr>
 </table>
 

@@ -179,3 +179,58 @@ function pcm_generate_uuid() {
 function pcm_builtin_categories() {
 	return array( 'necessary', 'functional', 'analytics', 'marketing', 'preferences' );
 }
+
+/**
+ * Derives banner colors from the active theme's global palette so the
+ * consent UI matches the site design ("use theme colors" banner setting).
+ *
+ * Block themes (theme.json) expose a palette; common slugs are probed in
+ * priority order. Classic themes without a palette return an empty array
+ * and the configured colors apply instead.
+ *
+ * @return array{primary?: string, text?: string, background?: string}
+ */
+function pcm_theme_colors() {
+	if ( ! function_exists( 'wp_get_global_settings' ) ) {
+		return array();
+	}
+
+	$palette = wp_get_global_settings( array( 'color', 'palette' ) );
+	$flat    = array();
+	foreach ( array( 'custom', 'theme', 'default' ) as $origin ) {
+		if ( ! empty( $palette[ $origin ] ) && is_array( $palette[ $origin ] ) ) {
+			foreach ( $palette[ $origin ] as $entry ) {
+				if ( ! empty( $entry['slug'] ) && ! empty( $entry['color'] ) && ! isset( $flat[ $entry['slug'] ] ) ) {
+					$flat[ $entry['slug'] ] = sanitize_hex_color( $entry['color'] );
+				}
+			}
+		}
+	}
+	if ( empty( $flat ) ) {
+		return array();
+	}
+
+	$pick = static function ( array $slugs ) use ( $flat ) {
+		foreach ( $slugs as $slug ) {
+			if ( ! empty( $flat[ $slug ] ) ) {
+				return $flat[ $slug ];
+			}
+		}
+		return '';
+	};
+
+	$colors = array_filter(
+		array(
+			'primary'    => $pick( array( 'primary', 'accent', 'accent-1', 'vivid-cyan-blue', 'contrast' ) ),
+			'text'       => $pick( array( 'contrast', 'foreground', 'black' ) ),
+			'background' => $pick( array( 'base', 'background', 'white' ) ),
+		)
+	);
+
+	/**
+	 * Filters the theme-derived consent UI colors.
+	 *
+	 * @param array $colors {primary, text, background} hex values.
+	 */
+	return apply_filters( 'pcm_theme_colors', $colors );
+}

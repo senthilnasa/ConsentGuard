@@ -166,11 +166,31 @@ class Frontend {
 	 */
 	private function banner_css_vars() {
 		$banner = pcm_get_setting( 'banner', array() );
+
+		$primary    = sanitize_hex_color( $banner['primary_color'] ?? '#1a73e8' ) ?: '#1a73e8';
+		$text       = sanitize_hex_color( $banner['text_color'] ?? '#1f2937' ) ?: '#1f2937';
+		$background = sanitize_hex_color( $banner['background_color'] ?? '#ffffff' ) ?: '#ffffff';
+
+		// "Use theme colors": align the consent UI with the active theme's
+		// palette (block themes). Explicit colors remain the fallback.
+		if ( ! empty( $banner['use_theme_colors'] ) ) {
+			$theme = pcm_theme_colors();
+			if ( ! empty( $theme['primary'] ) ) {
+				$primary = $theme['primary'];
+			}
+			if ( ! empty( $theme['text'] ) && 'light' === ( $banner['theme'] ?? 'light' ) ) {
+				$text = $theme['text'];
+			}
+			if ( ! empty( $theme['background'] ) && 'light' === ( $banner['theme'] ?? 'light' ) ) {
+				$background = $theme['background'];
+			}
+		}
+
 		return sprintf(
 			':root{--pcm-primary:%s;--pcm-text:%s;--pcm-bg:%s;--pcm-btn-text:%s;--pcm-font-size:%dpx;--pcm-radius:%dpx;}',
-			sanitize_hex_color( $banner['primary_color'] ?? '#1a73e8' ) ?: '#1a73e8',
-			sanitize_hex_color( $banner['text_color'] ?? '#1f2937' ) ?: '#1f2937',
-			sanitize_hex_color( $banner['background_color'] ?? '#ffffff' ) ?: '#ffffff',
+			$primary,
+			$text,
+			$background,
 			sanitize_hex_color( $banner['button_text_color'] ?? '#ffffff' ) ?: '#ffffff',
 			absint( $banner['font_size'] ?? 15 ),
 			absint( $banner['border_radius'] ?? 8 )

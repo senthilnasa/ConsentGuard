@@ -33,6 +33,12 @@ All notable changes to PrivacyPress.
 - Database upgrade check on admin_init so schema changes apply after plugin updates without reactivation.
 - PHPUnit unit suite (59 tests) and Jest suite (22 tests); PHPCS (WordPress standards) configuration; GitHub Actions CI (PHP 7.4–8.3 matrix, PHPCS, Jest).
 
+- CookieYes-style preferences modal: header with logo, expandable introduction ("Show more"), animated accordion per category with per-cookie detail tables (Cookie / Duration / Description), managed-services lines, pinned footer (Reject / Save / Accept).
+- Editable cookie inventory per category (Consent Categories screen), seeded with curated entries for the managed trackers; feeds both the modal and the proof-of-consent PDF.
+- Floating revisit widget: round icon button (built-in cookie glyph or admin logo), tooltip, four admin-selectable default corners, and visitor drag-anywhere with position memory.
+- "Match site theme": banner/modal colors derive from the active block theme's palette automatically.
+- Proof-of-consent PDF v2: branded header band with the project name and domain, colored category statuses, shaded cookie boxes, separator rules.
+
 ### Fixed
 - Presence-based settings sanitization: saving one admin screen can no longer reset checkbox settings that live on a different screen.
 

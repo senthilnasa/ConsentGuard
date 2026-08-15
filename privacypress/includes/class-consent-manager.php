@@ -236,6 +236,32 @@ class Consent_Manager {
 		$banner   = pcm_get_setting( 'banner', array() );
 		$policies = pcm_get_setting( 'policies', array() );
 
+		// Cookie inventory + managed services per category (modal detail tables).
+		$cookies = array();
+		foreach ( (array) pcm_get_setting( 'cookies', array() ) as $slug => $rows ) {
+			if ( isset( $categories[ $slug ] ) ) {
+				$cookies[ $slug ] = array_values( (array) $rows );
+			}
+		}
+
+		$services = array();
+		$managed  = array(
+			'ga4'        => __( 'Google Analytics 4', 'privacypress' ),
+			'clarity'    => __( 'Microsoft Clarity', 'privacypress' ),
+			'cloudflare' => __( 'Cloudflare Web Analytics', 'privacypress' ),
+			'gtm'        => __( 'Google Tag Manager', 'privacypress' ),
+		);
+		foreach ( $managed as $key => $label ) {
+			if ( pcm_get_setting( $key . '.enabled' ) ) {
+				$services[ pcm_get_setting( $key . '.category', 'analytics' ) ][] = $label;
+			}
+		}
+		foreach ( (array) pcm_get_setting( 'custom_scripts', array() ) as $script ) {
+			if ( ! empty( $script['enabled'] ) ) {
+				$services[ $script['category'] ][] = $script['name'];
+			}
+		}
+
 		return array(
 			'cookieName'     => self::COOKIE,
 			'cookieExpiry'   => (int) pcm_get_setting( 'consent.cookie_expiry', 180 ),
@@ -243,6 +269,8 @@ class Consent_Manager {
 			'policyVersion'  => (string) ( $policies['policy_version'] ?? '1.0' ),
 			'repromptOnChange' => (bool) pcm_get_setting( 'consent.reprompt_on_change', true ),
 			'categories'     => $categories,
+			'cookies'        => $cookies,
+			'services'       => $services,
 			'banner'         => $banner,
 			'privacyUrl'     => ! empty( $policies['privacy_page_id'] ) ? get_permalink( (int) $policies['privacy_page_id'] ) : '',
 			'cookieUrl'      => ! empty( $policies['cookie_page_id'] ) ? get_permalink( (int) $policies['cookie_page_id'] ) : '',
@@ -252,12 +280,20 @@ class Consent_Manager {
 			'debug'          => (bool) pcm_get_setting( 'advanced.debug', false ),
 			'language'       => get_locale(),
 			'i18n'           => array(
-				'preferencesTitle' => __( 'Privacy Preferences', 'privacypress' ),
+				'preferencesTitle' => __( 'Customise Consent Preferences', 'privacypress' ),
 				'alwaysActive'     => __( 'Always Active', 'privacypress' ),
 				'privacyPolicy'    => __( 'Privacy Policy', 'privacypress' ),
 				'cookiePolicy'     => __( 'Cookie Policy', 'privacypress' ),
 				'close'            => __( 'Close', 'privacypress' ),
 				'consentId'        => __( 'Consent ID', 'privacypress' ),
+				'showMore'         => __( 'Show more', 'privacypress' ),
+				'showLess'         => __( 'Show less', 'privacypress' ),
+				'cookie'           => __( 'Cookie', 'privacypress' ),
+				'duration'         => __( 'Duration', 'privacypress' ),
+				'description'      => __( 'Description', 'privacypress' ),
+				'noCookies'        => __( 'No cookies to display for this category.', 'privacypress' ),
+				'managedServices'  => __( 'Managed services', 'privacypress' ),
+				'expandCategory'   => __( 'Show cookie details for', 'privacypress' ),
 			),
 		);
 	}

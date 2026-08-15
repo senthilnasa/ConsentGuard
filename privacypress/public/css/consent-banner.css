@@ -252,38 +252,133 @@
 
 .pcm-modal {
 	position: relative;
+	display: flex;
+	flex-direction: column;
 	background: var(--pcm-surface);
 	border: 1px solid var(--pcm-edge);
 	border-radius: var(--pcm-radius, 12px);
-	max-width: 580px;
+	max-width: 620px;
 	width: 100%;
 	max-height: 85vh;
-	overflow-y: auto;
-	padding: 28px;
 	box-shadow: var(--pcm-shadow);
+	overflow: hidden;
 }
 
-.pcm-categories {
-	margin: 18px 0 6px;
+.pcm-modal-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 18px 24px;
+	border-bottom: 1px solid var(--pcm-edge);
+	flex-shrink: 0;
+}
+
+.pcm-modal-header .pcm-title {
+	margin: 0;
+	flex: 1;
+	font-size: 1.1em;
+}
+
+.pcm-modal-logo {
+	max-height: 30px;
+	width: auto;
+}
+
+.pcm-modal-header .pcm-close {
+	position: static;
+}
+
+.pcm-modal-body {
+	padding: 18px 24px;
+	overflow-y: auto;
+	flex: 1;
+}
+
+/* Intro with expandable description (Show more / Show less). */
+.pcm-intro-text {
+	margin: 0 0 4px;
+	color: var(--pcm-ink-soft);
+	font-size: 0.95em;
+}
+
+.pcm-intro-text.pcm-clamped {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.pcm-show-more {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	font-size: 0.9em;
+	font-weight: 600;
+	color: var(--pcm-primary, var(--pcm-primary-fallback));
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+/* Accordion category list. */
+.pcm-accordions {
+	margin-top: 16px;
 	border: 1px solid var(--pcm-edge);
 	border-radius: calc(var(--pcm-radius, 12px) * 0.75);
 	overflow: hidden;
 }
 
-.pcm-category {
-	padding: 14px 16px;
+.pcm-accordion {
 	border-top: 1px solid var(--pcm-edge);
+	padding: 14px 16px;
 }
 
-.pcm-category:first-child {
+.pcm-accordion:first-child {
 	border-top: none;
 }
 
-.pcm-category-head {
+.pcm-accordion-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
+}
+
+.pcm-accordion-btn {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	font-weight: 700;
+	color: var(--pcm-ink);
+	cursor: pointer;
+	text-align: left;
+	flex: 1;
+	min-height: 32px;
+}
+
+.pcm-accordion-btn:focus-visible {
+	outline: 3px solid var(--pcm-primary, var(--pcm-primary-fallback));
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.pcm-chevron {
+	width: 9px;
+	height: 9px;
+	border-right: 2.5px solid var(--pcm-ink-soft);
+	border-bottom: 2.5px solid var(--pcm-ink-soft);
+	transform: rotate(-45deg);
+	transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+	flex-shrink: 0;
+}
+
+.pcm-accordion.pcm-open .pcm-chevron {
+	transform: rotate(45deg);
 }
 
 .pcm-category-label {
@@ -291,24 +386,108 @@
 }
 
 .pcm-category-desc {
-	margin: 6px 0 0;
+	margin: 8px 0 0 19px;
 	color: var(--pcm-ink-soft);
 	font-size: 0.92em;
 }
 
 .pcm-always-active {
-	color: var(--pcm-primary, var(--pcm-primary-fallback));
+	color: #008000;
 	font-weight: 600;
 	font-size: 0.88em;
 	white-space: nowrap;
 }
 
-.pcm-modal .pcm-actions {
-	margin-top: 18px;
+.pcm-theme-dark .pcm-always-active {
+	color: #34d399;
+}
+
+@media (prefers-color-scheme: dark) {
+	.pcm-theme-auto .pcm-always-active {
+		color: #34d399;
+	}
+}
+
+/* Collapsible body with the cookie audit table. */
+.pcm-accordion-body {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pcm-accordion-body > .pcm-audit-table {
+	overflow: hidden;
+	min-height: 0;
+}
+
+.pcm-accordion.pcm-open .pcm-accordion-body {
+	grid-template-rows: 1fr;
+}
+
+.pcm-audit-table {
+	margin-left: 19px;
+}
+
+.pcm-cookie-row {
+	list-style: none;
+	margin: 12px 0 0;
+	padding: 12px 14px;
+	border: 1px solid var(--pcm-edge);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.06);
+	font-size: 0.9em;
+}
+
+.pcm-cookie-row li {
+	display: flex;
+	gap: 10px;
+	padding: 2px 0;
+}
+
+.pcm-cookie-key {
+	flex: 0 0 90px;
+	font-weight: 600;
+	color: var(--pcm-ink-soft);
+}
+
+.pcm-cookie-val {
+	flex: 1;
+	word-break: break-word;
+}
+
+.pcm-services-line {
+	margin: 12px 0 2px;
+	font-size: 0.9em;
+	color: var(--pcm-ink-soft);
+}
+
+/* Footer pinned under the scroll area. */
+.pcm-modal-footer {
+	position: relative;
+	padding: 16px 24px 14px;
+	border-top: 1px solid var(--pcm-edge);
+	flex-shrink: 0;
+	background: var(--pcm-surface);
+}
+
+.pcm-modal-footer::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: -28px;
+	height: 28px;
+	pointer-events: none;
+	background: linear-gradient(180deg, rgba(127, 127, 127, 0) 0%, rgba(127, 127, 127, 0.1) 100%);
+}
+
+.pcm-btn-accent {
+	border-color: var(--pcm-primary, var(--pcm-primary-fallback));
+	color: var(--pcm-primary, var(--pcm-primary-fallback));
 }
 
 .pcm-consent-id {
-	margin: 16px 0 0;
+	margin: 12px 0 0;
 	font-size: 0.78em;
 	color: var(--pcm-ink-soft);
 	word-break: break-all;
@@ -370,31 +549,95 @@
 
 /* --------------------------------------------------------------- reopen */
 
+/* Floating revisit widget: round icon button, draggable, with tooltip. */
 .pcm-reopen {
 	position: fixed;
-	left: 18px;
-	bottom: 18px;
 	z-index: 99997;
-	background: var(--pcm-surface);
-	color: var(--pcm-ink);
+	touch-action: none; /* Enables pointer-based dragging on touch devices. */
+	animation: pcm-fade-in 0.3s ease-out;
+}
+
+.pcm-reopen-bottom-left { left: 18px; bottom: 18px; }
+.pcm-reopen-bottom-right { right: 18px; bottom: 18px; }
+.pcm-reopen-top-left { left: 18px; top: 18px; }
+.pcm-reopen-top-right { right: 18px; top: 18px; }
+
+.pcm-reopen-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
 	border: 1px solid var(--pcm-edge);
-	border-radius: 999px;
-	padding: 9px 16px;
-	font-size: 0.85em;
-	font-weight: 600;
-	cursor: pointer;
-	box-shadow: 0 4px 18px rgba(15, 23, 42, 0.18);
-	transition: transform 0.12s ease, box-shadow 0.12s ease;
+	background: var(--pcm-primary, var(--pcm-primary-fallback));
+	color: #fff;
+	cursor: grab;
+	box-shadow: 0 6px 22px rgba(15, 23, 42, 0.3);
+	transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+	padding: 0;
 }
 
-.pcm-reopen:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
+.pcm-reopen-btn:hover {
+	transform: scale(1.08);
+	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.35);
 }
 
-.pcm-reopen:focus-visible {
+.pcm-reopen.pcm-dragging .pcm-reopen-btn {
+	cursor: grabbing;
+	transform: scale(1.12);
+}
+
+.pcm-reopen-btn:focus-visible {
 	outline: 3px solid var(--pcm-primary, var(--pcm-primary-fallback));
-	outline-offset: 2px;
+	outline-offset: 3px;
+}
+
+.pcm-reopen-img {
+	width: 26px;
+	height: 26px;
+	object-fit: contain;
+	border-radius: 50%;
+}
+
+.pcm-reopen-icon {
+	display: flex;
+}
+
+/* Tooltip from the configured label. */
+.pcm-reopen::after {
+	content: attr(data-pcm-tooltip);
+	position: absolute;
+	left: 110%;
+	top: 50%;
+	transform: translateY(-50%) translateX(-4px);
+	background: var(--pcm-ink, #1f2937);
+	color: var(--pcm-surface, #fff);
+	padding: 5px 10px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.pcm-reopen-bottom-right::after,
+.pcm-reopen-top-right::after {
+	left: auto;
+	right: 110%;
+	transform: translateY(-50%) translateX(4px);
+}
+
+.pcm-reopen:hover::after,
+.pcm-reopen:focus-within::after {
+	opacity: 1;
+	transform: translateY(-50%) translateX(0);
+}
+
+.pcm-reopen.pcm-dragging::after {
+	opacity: 0;
 }
 
 /* Inline "Privacy Settings" button rendered by the shortcode. */

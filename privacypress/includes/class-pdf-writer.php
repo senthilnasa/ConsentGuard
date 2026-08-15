@@ -11,9 +11,10 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Produces simple, valid PDF 1.4 documents (Helvetica / Helvetica-Bold,
- * A4 portrait, word-wrapped text lines, automatic page breaks, "n / m"
- * page footers). Deliberately tiny instead of bundling a PDF library:
- * the proof-of-consent export only needs headed text.
+ * A4 portrait, word-wrapped text lines, colored text, filled rectangles,
+ * separator rules, automatic page breaks, "n / m" page footers).
+ * Deliberately tiny instead of bundling a PDF library: the proof-of-consent
+ * export only needs headed, branded text.
  */
 class Pdf_Writer {
 
@@ -24,8 +25,9 @@ class Pdf_Writer {
 	const BOTTOM_Y    = 64;
 
 	/**
-	 * Pages; each page is a list of line ops
-	 * {text, size, bold, x, y}.
+	 * Pages; each page is a list of ops:
+	 * text: {op:'text', text, size, bold, x, y, color}
+	 * rect: {op:'rect', x, y, w, h, color}.
 	 *
 	 * @var array[]
 	 */
@@ -55,23 +57,44 @@ class Pdf_Writer {
 	}
 
 	/**
+	 * Draws a full-width brand band across the top of the current page with
+	 * the given text (white, bold) and optional right-aligned subtext.
+	 *
+	 * @param string $text    Brand text.
+	 * @param string $hex     Band color (hex).
+	 * @param string $subtext Right-aligned smaller text (e.g. domain).
+	 */
+	public function header_band( $text, $hex, $subtext = '' ) {
+		$height = 56;
+		$this->push_rect( 0, self::PAGE_HEIGHT - $height, self::PAGE_WIDTH, $height, $hex );
+		$this->push_text( $text, 18, true, self::MARGIN_X, self::PAGE_HEIGHT - 37, '#ffffff' );
+		if ( '' !== $subtext ) {
+			$approx_width = strlen( $subtext ) * 0.5 * 10;
+			$this->push_text( $subtext, 10, false, self::PAGE_WIDTH - self::MARGIN_X - $approx_width, self::PAGE_HEIGHT - 35, '#ffffff' );
+		}
+		$this->y = self::PAGE_HEIGHT - $height - 34;
+	}
+
+	/**
 	 * Adds a large bold title line.
 	 *
-	 * @param string $text Text.
+	 * @param string $text  Text.
+	 * @param string $color Hex color.
 	 */
-	public function title( $text ) {
-		$this->line( $text, 20, true );
+	public function title( $text, $color = '' ) {
+		$this->line( $text, 20, true, 0, $color );
 		$this->space( 10 );
 	}
 
 	/**
 	 * Adds a section heading.
 	 *
-	 * @param string $text Text.
+	 * @param string $text  Text.
+	 * @param string $color Hex color.
 	 */
-	public function heading( $text ) {
+	public function heading( $text, $color = '' ) {
 		$this->space( 8 );
-		$this->line( $text, 13, true );
+		$this->line( $text, 13, true, 0, $color );
 		$this->space( 4 );
 	}
 
@@ -82,9 +105,12 @@ class Pdf_Writer {
 	 * @param string $value Value.
 	 */
 	public function field( $label, $value ) {
+		$this->space( 8 );
+		$this->line( $label, 9, true, 0, '#777777' );
+		$this->space( 1 );
+		$this->line( '' !== (string) $value ? (string) $value : '-', 11.5, false );
 		$this->space( 6 );
-		$this->line( $label, 10, true );
-		$this->line( '' !== (string) $value ? (string) $value : '-', 11, false );
+		$this->hr();
 	}
 
 	/**
@@ -94,9 +120,10 @@ class Pdf_Writer {
 	 * @param int    $size   Font size.
 	 * @param bool   $bold   Bold.
 	 * @param int    $indent Extra left indent in points.
+	 * @param string $color  Hex color.
 	 */
-	public function paragraph( $text, $size = 11, $bold = false, $indent = 0 ) {
-		$this->line( $text, $size, $bold, $indent );
+	public function paragraph( $text, $size = 11, $bold = false, $indent = 0, $color = '' ) {
+		$this->line( $text, $size, $bold, $indent, $color );
 	}
 
 	/**
@@ -109,14 +136,44 @@ class Pdf_Writer {
 	}
 
 	/**
+	 * Draws a thin horizontal separator rule at the cursor.
+	 *
+	 * @param string $hex    Rule color.
+	 * @param int    $indent Left indent.
+	 */
+	public function hr( $hex = '#e6e6e6', $indent = 0 ) {
+		$this->ensure_room( 6 );
+		$this->push_rect( self::MARGIN_X + $indent, $this->y, self::PAGE_WIDTH - 2 * self::MARGIN_X - $indent, 0.8, $hex );
+		$this->y -= 6;
+	}
+
+	/**
+	 * Draws a filled box (used as cookie-entry background).
+	 *
+	 * @param float  $height Box height.
+	 * @param string $hex    Fill color.
+	 * @param int    $indent Left indent.
+	 */
+	public function box( $height, $hex = '#f4f4f4', $indent = 0 ) {
+		$this->push_rect(
+			self::MARGIN_X + $indent,
+			$this->y - $height,
+			self::PAGE_WIDTH - 2 * self::MARGIN_X - $indent,
+			$height,
+			$hex
+		);
+	}
+
+	/**
 	 * Adds a wrapped text line (may span multiple physical lines).
 	 *
 	 * @param string $text   Text.
-	 * @param int    $size   Font size.
+	 * @param float  $size   Font size.
 	 * @param bool   $bold   Bold.
 	 * @param int    $indent Extra left indent.
+	 * @param string $color  Hex color ('' = default ink).
 	 */
-	public function line( $text, $size = 11, $bold = false, $indent = 0 ) {
+	public function line( $text, $size = 11, $bold = false, $indent = 0, $color = '' ) {
 		$max_width = self::PAGE_WIDTH - 2 * self::MARGIN_X - $indent;
 		// Helvetica average glyph width ≈ 0.52 em; conservative wrap estimate.
 		$max_chars = max( 8, (int) floor( $max_width / ( 0.52 * $size ) ) );
@@ -126,19 +183,45 @@ class Pdf_Writer {
 
 		foreach ( $rows as $row ) {
 			$line_height = $size * 1.45;
-			if ( $this->y - $line_height < self::BOTTOM_Y ) {
-				$this->pages[] = array();
-				$this->y       = self::TOP_Y;
-			}
+			$this->ensure_room( $line_height );
 			$this->y -= $line_height;
+			$this->push_text( $row, $size, $bold, self::MARGIN_X + $indent, $this->y, $color );
+		}
+	}
 
-			$this->pages[ count( $this->pages ) - 1 ][] = array(
-				'text' => $row,
-				'size' => $size,
-				'bold' => $bold,
-				'x'    => self::MARGIN_X + $indent,
-				'y'    => $this->y,
-			);
+	/**
+	 * Number of physical lines a text will occupy at a size/indent
+	 * (used to pre-size boxes behind wrapped text).
+	 *
+	 * @param string $text   Text.
+	 * @param float  $size   Font size.
+	 * @param int    $indent Indent.
+	 * @return int
+	 */
+	public function measure_lines( $text, $size = 11, $indent = 0 ) {
+		$max_width = self::PAGE_WIDTH - 2 * self::MARGIN_X - $indent;
+		$max_chars = max( 8, (int) floor( $max_width / ( 0.52 * $size ) ) );
+		return count( explode( "\n", wordwrap( $this->to_pdf_text( $text ), $max_chars, "\n", true ) ) );
+	}
+
+	/**
+	 * Remaining vertical space on the current page.
+	 *
+	 * @return float
+	 */
+	public function room_left() {
+		return $this->y - self::BOTTOM_Y;
+	}
+
+	/**
+	 * Starts a new page when fewer than $needed points remain.
+	 *
+	 * @param float $needed Needed points.
+	 */
+	public function ensure_room( $needed ) {
+		if ( $this->y - $needed < self::BOTTOM_Y ) {
+			$this->pages[] = array();
+			$this->y       = self::TOP_Y;
 		}
 	}
 
@@ -167,21 +250,41 @@ class Pdf_Writer {
 		$objects[] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
 		$objects[] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
 
-		foreach ( $this->pages as $index => $lines ) {
-			$content = "BT\n";
-			foreach ( $lines as $line ) {
+		foreach ( $this->pages as $index => $ops ) {
+			$content = '';
+
+			// Rectangles first so text always sits above fills.
+			foreach ( $ops as $op ) {
+				if ( 'rect' === $op['op'] ) {
+					$content .= sprintf(
+						"%s rg %.2F %.2F %.2F %.2F re f\n",
+						$this->rgb( $op['color'] ),
+						$op['x'],
+						$op['y'],
+						$op['w'],
+						$op['h']
+					);
+				}
+			}
+
+			$content .= "BT\n";
+			foreach ( $ops as $op ) {
+				if ( 'text' !== $op['op'] ) {
+					continue;
+				}
 				$content .= sprintf(
-					"/%s %d Tf\n1 0 0 1 %.2F %.2F Tm\n(%s) Tj\n",
-					$line['bold'] ? 'F2' : 'F1',
-					$line['size'],
-					$line['x'],
-					$line['y'],
-					$this->escape( $line['text'] )
+					"%s rg /%s %.2F Tf\n1 0 0 1 %.2F %.2F Tm\n(%s) Tj\n",
+					$this->rgb( $op['color'] ?: '#1f2430' ),
+					$op['bold'] ? 'F2' : 'F1',
+					$op['size'],
+					$op['x'],
+					$op['y'],
+					$this->escape( $op['text'] )
 				);
 			}
 			// Footer: "n / m".
 			$content .= sprintf(
-				"/F1 9 Tf\n1 0 0 1 %.2F %.2F Tm\n(%s) Tj\n",
+				"0.55 0.55 0.55 rg /F1 9 Tf\n1 0 0 1 %.2F %.2F Tm\n(%s) Tj\n",
 				self::PAGE_WIDTH - self::MARGIN_X - 40,
 				40,
 				$this->escape( ( $index + 1 ) . ' / ' . $total )
@@ -226,6 +329,70 @@ class Pdf_Writer {
 		);
 
 		return $pdf;
+	}
+
+	/**
+	 * Queues a text op on the current page.
+	 *
+	 * @param string $text  Text (already WinAnsi).
+	 * @param float  $size  Size.
+	 * @param bool   $bold  Bold.
+	 * @param float  $x     X.
+	 * @param float  $y     Y.
+	 * @param string $color Hex color.
+	 */
+	private function push_text( $text, $size, $bold, $x, $y, $color = '' ) {
+		$this->pages[ count( $this->pages ) - 1 ][] = array(
+			'op'    => 'text',
+			'text'  => $text,
+			'size'  => $size,
+			'bold'  => $bold,
+			'x'     => $x,
+			'y'     => $y,
+			'color' => $color,
+		);
+	}
+
+	/**
+	 * Queues a rectangle op on the current page.
+	 *
+	 * @param float  $x     X.
+	 * @param float  $y     Y (bottom edge).
+	 * @param float  $w     Width.
+	 * @param float  $h     Height.
+	 * @param string $color Hex fill.
+	 */
+	private function push_rect( $x, $y, $w, $h, $color ) {
+		$this->pages[ count( $this->pages ) - 1 ][] = array(
+			'op'    => 'rect',
+			'x'     => $x,
+			'y'     => $y,
+			'w'     => $w,
+			'h'     => $h,
+			'color' => $color,
+		);
+	}
+
+	/**
+	 * Hex color to PDF "r g b" floats.
+	 *
+	 * @param string $hex Hex color.
+	 * @return string
+	 */
+	private function rgb( $hex ) {
+		$hex = ltrim( (string) $hex, '#' );
+		if ( 3 === strlen( $hex ) ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		if ( 6 !== strlen( $hex ) || ! ctype_xdigit( $hex ) ) {
+			$hex = '1f2430';
+		}
+		return sprintf(
+			'%.3F %.3F %.3F',
+			hexdec( substr( $hex, 0, 2 ) ) / 255,
+			hexdec( substr( $hex, 2, 2 ) ) / 255,
+			hexdec( substr( $hex, 4, 2 ) ) / 255
+		);
 	}
 
 	/**

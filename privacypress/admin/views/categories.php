@@ -53,4 +53,17 @@ Admin::maybe_notice();
 </table>
 <p class="description"><?php esc_html_e( 'New categories default to disabled until the visitor grants them.', 'privacypress' ); ?></p>
 
+<h2><?php esc_html_e( 'Cookie details per category', 'privacypress' ); ?></h2>
+<p class="description"><?php esc_html_e( 'These entries are shown to visitors inside each category of the preferences modal and in the proof-of-consent PDF. One cookie per line, three parts separated by | (pipe): name | duration | description.', 'privacypress' ); ?></p>
+
+<?php $pcm_inventory = $settings['cookies'] ?? array(); ?>
+<?php foreach ( $pcm_categories as $pcm_slug => $pcm_cat ) : ?>
+	<h3><?php echo esc_html( $pcm_cat['label'] ); ?> <code><?php echo esc_html( $pcm_slug ); ?></code></h3>
+	<textarea class="large-text code" rows="4" name="pcm_cookie_inventory[<?php echo esc_attr( $pcm_slug ); ?>]" placeholder="_ga | 1 year | Google Analytics visitor cookie"><?php
+	foreach ( (array) ( $pcm_inventory[ $pcm_slug ] ?? array() ) as $pcm_cookie ) {
+		echo esc_textarea( $pcm_cookie['name'] . ' | ' . $pcm_cookie['duration'] . ' | ' . $pcm_cookie['description'] . "\n" );
+	}
+	?></textarea>
+<?php endforeach; ?>
+
 <?php Admin::form_close(); ?>

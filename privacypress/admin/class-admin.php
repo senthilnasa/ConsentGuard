@@ -243,6 +243,34 @@ class Admin {
 			$raw['jurisdictions']['rules'] = $rules;
 		}
 
+		// Cookie inventory textareas: "name | duration | description" lines.
+		if ( isset( $_POST['pcm_cookie_inventory'] ) && is_array( $_POST['pcm_cookie_inventory'] ) ) {
+			$inventory = array();
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per line below.
+			foreach ( wp_unslash( $_POST['pcm_cookie_inventory'] ) as $slug => $text ) {
+				$slug = pcm_sanitize_category_slug( $slug );
+				if ( '' === $slug ) {
+					continue;
+				}
+				$inventory[ $slug ] = array();
+				foreach ( explode( "\n", sanitize_textarea_field( $text ) ) as $line ) {
+					$parts = array_map( 'trim', explode( '|', $line, 3 ) );
+					if ( '' === $parts[0] ) {
+						continue;
+					}
+					$inventory[ $slug ][] = array(
+						'name'        => $parts[0],
+						'duration'    => $parts[1] ?? '',
+						'description' => $parts[2] ?? '',
+					);
+				}
+			}
+			$raw['cookies'] = $inventory;
+			if ( ! in_array( 'cookies', $sections, true ) ) {
+				$sections[] = 'cookies';
+			}
+		}
+
 		// New custom category from the categories screen.
 		if ( ! empty( $_POST['pcm_new_category_slug'] ) && isset( $raw['categories'] ) ) {
 			$new_slug = pcm_sanitize_category_slug( wp_unslash( $_POST['pcm_new_category_slug'] ) );
@@ -452,10 +480,19 @@ class Admin {
 			}
 		}
 
-		$pdf = new Pdf_Writer( __( 'Proof of consent', 'privacypress' ) );
-		$pdf->title( __( 'Proof of consent', 'privacypress' ) );
+		$primary   = sanitize_hex_color( $settings['banner']['primary_color'] ?? '#1a73e8' ) ?: '#1a73e8';
+		$inventory = (array) ( $settings['cookies'] ?? array() );
+		$domain    = (string) wp_parse_url( home_url(), PHP_URL_HOST );
 
-		$pdf->field( __( 'Consented domain', 'privacypress' ), (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		$pdf = new Pdf_Writer( __( 'Proof of consent', 'privacypress' ) );
+
+		// Branded header band: project name + domain.
+		$pdf->header_band( 'PrivacyPress', $primary, $domain );
+
+		$pdf->title( __( 'Proof of consent', 'privacypress' ) );
+		$pdf->hr();
+
+		$pdf->field( __( 'Consented domain', 'privacypress' ), $domain );
 		$pdf->field( __( 'Consent date', 'privacypress' ), $record['created_at'] . ' UTC+00:00' );
 		$pdf->field( __( 'Consent ID', 'privacypress' ), $record['consent_id'] );
 		$pdf->field( __( 'Anonymous visitor ID', 'privacypress' ), $record['anonymous_id'] ?: __( 'Not provided', 'privacypress' ) );
@@ -467,43 +504,79 @@ class Admin {
 		$pdf->field( __( 'Consent version', 'privacypress' ), $record['consent_version'] ?: '-' );
 		$pdf->field( __( 'Policy version', 'privacypress' ), $record['policy_version'] ?: '-' );
 
-		$pdf->heading( __( 'Category-wise consent status', 'privacypress' ) );
+		$pdf->space( 10 );
+		$pdf->heading( __( 'Category-wise consent status', 'privacypress' ), $primary );
+
 		foreach ( $categories as $slug => $category ) {
 			if ( ! empty( $category['required'] ) ) {
 				$state_label = __( 'Always Active', 'privacypress' );
+				$state_color = '#008000';
+			} elseif ( in_array( $slug, $granted, true ) ) {
+				$state_label = __( 'Accepted', 'privacypress' );
+				$state_color = '#008000';
 			} else {
-				$state_label = in_array( $slug, $granted, true )
-					? __( 'Accepted', 'privacypress' )
-					: __( 'Rejected', 'privacypress' );
+				$state_label = __( 'Rejected', 'privacypress' );
+				$state_color = '#b3261e';
 			}
-			$pdf->space( 6 );
-			$pdf->paragraph( $category['label'] . ':  ' . $state_label, 12, true );
+
+			$pdf->ensure_room( 80 );
+			$pdf->space( 10 );
+			$pdf->paragraph( $category['label'], 13, true );
+			$pdf->space( 1 );
+			$pdf->paragraph( $state_label, 10.5, true, 0, $state_color );
 			if ( ! empty( $category['description'] ) ) {
-				$pdf->paragraph( $category['description'], 10, false, 12 );
+				$pdf->space( 2 );
+				$pdf->paragraph( $category['description'], 9.5, false, 0, '#666666' );
 			}
+
+			// Cookie entries (Cookie / Duration / Description) in shaded boxes.
+			foreach ( (array) ( $inventory[ $slug ] ?? array() ) as $cookie ) {
+				$desc_lines = $pdf->measure_lines( (string) ( $cookie['description'] ?? '' ), 9, 96 );
+				$box_height = 44 + $desc_lines * 13;
+				$pdf->ensure_room( $box_height + 10 );
+				$pdf->space( 8 );
+				$pdf->box( $box_height, '#f4f4f4', 6 );
+				$pdf->space( 8 );
+				$pdf->paragraph( __( 'Cookie', 'privacypress' ) . ':      ' . ( $cookie['name'] ?? '' ), 9.5, true, 16 );
+				$pdf->paragraph( __( 'Duration', 'privacypress' ) . ':   ' . ( '' !== ( $cookie['duration'] ?? '' ) ? $cookie['duration'] : '-' ), 9, false, 16 );
+				$pdf->paragraph( __( 'Description', 'privacypress' ) . ': ' . ( '' !== ( $cookie['description'] ?? '' ) ? $cookie['description'] : '-' ), 9, false, 16 );
+				$pdf->space( 8 );
+			}
+
 			if ( ! empty( $services[ $slug ] ) ) {
+				$pdf->space( 4 );
 				$pdf->paragraph(
 					__( 'Managed services:', 'privacypress' ) . ' ' . implode( ', ', array_unique( $services[ $slug ] ) ),
-					10,
+					9.5,
 					false,
-					12
+					0,
+					'#666666'
 				);
 			}
+			$pdf->space( 8 );
+			$pdf->hr();
 		}
 
-		$pdf->space( 16 );
+		$pdf->space( 14 );
 		$pdf->paragraph(
 			__( 'This document was generated by PrivacyPress from the consent record stored on the website\'s own server. Consent records contain no IP addresses or direct identifiers; the anonymous visitor ID is generated in the visitor\'s browser.', 'privacypress' ),
-			9
+			8.5,
+			false,
+			0,
+			'#888888'
 		);
+		$pdf->space( 2 );
 		$pdf->paragraph(
 			sprintf(
 				/* translators: 1: site URL, 2: generation time */
-				__( 'Generated by %1$s on %2$s UTC.', 'privacypress' ),
+				__( 'Generated by PrivacyPress for %1$s on %2$s UTC.', 'privacypress' ),
 				home_url(),
 				gmdate( 'Y-m-d H:i:s' )
 			),
-			9
+			8.5,
+			false,
+			0,
+			'#888888'
 		);
 
 		return $pdf->render();

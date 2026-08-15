@@ -35,6 +35,7 @@ const CONFIG = {
 	banner: {
 		title: 'We value your privacy',
 		message: 'Message',
+		preferences_intro: 'Short intro.',
 		accept_label: 'Accept All',
 		reject_label: 'Reject All',
 		manage_label: 'Manage Preferences',
@@ -43,9 +44,20 @@ const CONFIG = {
 		show_reject: true,
 		show_close: false,
 		reopen_button: true,
+		reopen_position: 'bottom-left',
+		reopen_draggable: true,
+		reopen_icon_url: '',
 		position: 'bottom',
 		layout: 'bar',
 		animation: 'none'
+	},
+	cookies: {
+		analytics: [
+			{ name: '_ga', duration: '1 year 1 month 4 days', description: 'Google Analytics visitor cookie.' }
+		]
+	},
+	services: {
+		analytics: [ 'Google Analytics 4' ]
 	},
 	categories: {
 		necessary: { label: 'Necessary', description: '', required: true },
@@ -57,7 +69,14 @@ const CONFIG = {
 	i18n: {}
 };
 
+function clearStorage() {
+	try {
+		window.localStorage.clear();
+	} catch ( e ) { /* ignore */ }
+}
+
 function clearCookies() {
+	clearStorage();
 	document.cookie.split( ';' ).forEach( function ( c ) {
 		const name = c.split( '=' )[ 0 ].trim();
 		if ( name ) {
@@ -342,6 +361,93 @@ describe( 'WP Consent API bridge', () => {
 		expect( window.wp_set_consent ).toHaveBeenCalledWith( 'marketing', 'allow' );
 		window.PrivacyConsent.rejectAll();
 		expect( window.wp_set_consent ).toHaveBeenCalledWith( 'statistics', 'deny' );
+	} );
+} );
+
+describe( 'preferences modal detail view', () => {
+	beforeEach( () => clearCookies() );
+
+	test( 'accordions render cookie details and toggle open state', () => {
+		boot();
+		window.PrivacyConsent.openPreferences();
+
+		const analytics = document.querySelector( '#pcm-acc-analytics' );
+		expect( analytics ).not.toBeNull();
+
+		// Cookie table content comes from the configured inventory.
+		const values = Array.prototype.map.call(
+			analytics.querySelectorAll( '.pcm-cookie-val' ),
+			( n ) => n.textContent
+		);
+		expect( values ).toContain( '_ga' );
+		expect( values ).toContain( '1 year 1 month 4 days' );
+		expect( analytics.textContent ).toContain( 'Google Analytics 4' );
+
+		// First category opens by default; others expand on click.
+		expect( document.querySelector( '#pcm-acc-necessary' ).classList.contains( 'pcm-open' ) ).toBe( true );
+		const btn = analytics.querySelector( '.pcm-accordion-btn' );
+		expect( btn.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		btn.click();
+		expect( analytics.classList.contains( 'pcm-open' ) ).toBe( true );
+		expect( btn.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	test( 'long intro collapses behind Show more', () => {
+		boot( { banner: Object.assign( {}, CONFIG.banner, {
+			preferences_intro: 'A very long introduction text. '.repeat( 12 )
+		} ) } );
+		window.PrivacyConsent.openPreferences();
+
+		const text = document.querySelector( '.pcm-intro-text' );
+		const more = document.querySelector( '.pcm-show-more' );
+		expect( text.classList.contains( 'pcm-clamped' ) ).toBe( true );
+		expect( more.textContent ).toBe( 'Show more' );
+		more.click();
+		expect( text.classList.contains( 'pcm-clamped' ) ).toBe( false );
+		expect( more.textContent ).toBe( 'Show less' );
+	} );
+} );
+
+describe( 'floating revisit widget', () => {
+	beforeEach( () => clearCookies() );
+
+	test( 'honors the admin default position and custom icon', () => {
+		boot( { banner: Object.assign( {}, CONFIG.banner, {
+			reopen_position: 'bottom-right',
+			reopen_icon_url: 'https://example.test/logo.png'
+		} ) } );
+		window.PrivacyConsent.acceptAll();
+
+		const widget = document.querySelector( '.pcm-reopen' );
+		expect( widget.classList.contains( 'pcm-reopen-bottom-right' ) ).toBe( true );
+		expect( widget.querySelector( 'img.pcm-reopen-img' ).getAttribute( 'src' ) ).toBe( 'https://example.test/logo.png' );
+		expect( widget.querySelector( 'button' ).getAttribute( 'aria-haspopup' ) ).toBe( 'dialog' );
+	} );
+
+	test( 'dragging moves the widget and persists the position', () => {
+		boot();
+		window.PrivacyConsent.acceptAll();
+		const widget = document.querySelector( '.pcm-reopen' );
+
+		// jsdom reports the widget rect at 0,0: grabbing at (100,100) and
+		// moving to (200,300) drags it by (100,200).
+		widget.dispatchEvent( new window.MouseEvent( 'pointerdown', { clientX: 100, clientY: 100, bubbles: true } ) );
+		widget.dispatchEvent( new window.MouseEvent( 'pointermove', { clientX: 200, clientY: 300, bubbles: true } ) );
+		widget.dispatchEvent( new window.MouseEvent( 'pointerup', { bubbles: true } ) );
+
+		expect( widget.style.left ).toBe( '100px' );
+		expect( widget.style.top ).toBe( '200px' );
+		const saved = JSON.parse( window.localStorage.getItem( 'pcmReopenPos' ) );
+		expect( saved ).toEqual( { x: 100, y: 200 } );
+	} );
+
+	test( 'a saved position is restored on the next page view', () => {
+		window.localStorage.setItem( 'pcmReopenPos', JSON.stringify( { x: 60, y: 70 } ) );
+		boot();
+		window.PrivacyConsent.acceptAll();
+		const widget = document.querySelector( '.pcm-reopen' );
+		expect( widget.style.left ).toBe( '60px' );
+		expect( widget.style.top ).toBe( '70px' );
 	} );
 } );
 
