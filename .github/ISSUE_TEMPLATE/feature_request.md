@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for PrivacyPress
+about: Suggest an idea for ConsentGuard
 labels: enhancement
 ---
 
@@ -11,5 +11,5 @@ labels: enhancement
 **Alternatives considered**
 
 **Privacy note**
-PrivacyPress never stores IPs, never assumes consent and never phones home.
+ConsentGuard never stores IPs, never assumes consent and never phones home.
 Please describe how the feature stays within those principles.

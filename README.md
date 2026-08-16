@@ -1,6 +1,6 @@
-# PrivacyPress
+# ConsentGuard
 
-[![CI](https://github.com/senthilnasa/PrivacyPress/actions/workflows/ci.yml/badge.svg)](https://github.com/senthilnasa/PrivacyPress/actions/workflows/ci.yml)
+[![CI](https://github.com/senthilnasa/ConsentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/senthilnasa/ConsentGuard/actions/workflows/ci.yml)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)](https://www.php.net/)
 [![WordPress 6.2+](https://img.shields.io/badge/WordPress-6.2%2B-21759B.svg)](https://wordpress.org/)
@@ -13,7 +13,7 @@ vendor lock-in.
 > **One website → one centralized consent decision → one source of truth for
 > analytics and tracking.**
 
-The plugin lives in [`privacypress/`](privacypress/).
+The plugin lives in [``consentguard/``](consentguard/).
 
 ## Highlights
 
@@ -57,32 +57,32 @@ The plugin lives in [`privacypress/`](privacypress/).
   live Cookie Details table), Elementor widget, `[pcm_privacy_settings]`
   shortcode
 - 🔗 **Interoperable** — WP Consent API bridge, JavaScript API, DOM events,
-  PHP hooks, REST API, WP-CLI commands (`wp privacypress …`),
+  PHP hooks, REST API, WP-CLI commands (`wp consentguard …`),
   settings import/export (JSON), multisite-aware
 
 ## Quick start
 
 ```bash
-git clone https://github.com/senthilnasa/PrivacyPress.git
-cp -r PrivacyPress/privacypress wp-content/plugins/
+git clone https://github.com/senthilnasa/ConsentGuard.git
+cp -r ConsentGuard/consentguard wp-content/plugins/
 ```
 
-Or download the [latest release ZIP](https://github.com/senthilnasa/PrivacyPress/releases)
+Or download the [latest release ZIP](https://github.com/senthilnasa/ConsentGuard/releases)
 and install via *Plugins → Add New → Upload Plugin*.
 
-1. Activate and configure under **PrivacyPress** in wp-admin.
+1. Activate and configure under **ConsentGuard** in wp-admin.
 2. Add your GA4 / Clarity / Cloudflare / GTM IDs under **Analytics**.
 3. Run **Cookie/Script Scanner → Scan Now** and review **Plugin Conflicts**.
-4. Full guides: [Installation](privacypress/docs/INSTALL.md) ·
-   [Admin Guide](privacypress/docs/ADMIN-GUIDE.md) ·
-   [Developer Docs](privacypress/docs/DEVELOPER.md)
+4. Full guides: [Installation](consentguard/docs/INSTALL.md) ·
+   [Admin Guide](consentguard/docs/ADMIN-GUIDE.md) ·
+   [Developer Docs](consentguard/docs/DEVELOPER.md)
 
 ## Local development & testing
 
 ```bash
-git clone https://github.com/senthilnasa/PrivacyPress.git && cd PrivacyPress
+git clone https://github.com/senthilnasa/ConsentGuard.git && cd ConsentGuard
 docker compose up -d          # WordPress + MariaDB on http://localhost:9080
-cd privacypress
+cd consentguard
 composer install && npm install
 composer test                 # PHPUnit
 npm test                      # Jest
@@ -92,7 +92,7 @@ composer lint                 # WordPress coding standards
 ## Contributing
 
 Issues and pull requests are welcome at
-[github.com/senthilnasa/PrivacyPress](https://github.com/senthilnasa/PrivacyPress) —
+[github.com/senthilnasa/ConsentGuard](https://github.com/senthilnasa/ConsentGuard) —
 see [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: see
 [SECURITY.md](SECURITY.md).
 

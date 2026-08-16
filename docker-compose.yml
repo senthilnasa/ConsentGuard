@@ -1,4 +1,4 @@
-# Local WordPress test environment for PrivacyPress.
+# Local WordPress test environment for ConsentGuard.
 #
 #   docker compose up -d          # start WordPress + MariaDB on http://localhost:9080
 #   docker compose run --rm wpcli <wp command>
@@ -34,7 +34,7 @@ services:
       WORDPRESS_DEBUG: "1"
     volumes:
       - wp_data:/var/www/html
-      - ./privacypress:/var/www/html/wp-content/plugins/privacypress
+      - ./consentguard:/var/www/html/wp-content/plugins/consentguard
     depends_on:
       db:
         condition: service_healthy
@@ -49,7 +49,7 @@ services:
       WORDPRESS_DB_NAME: wordpress
     volumes:
       - wp_data:/var/www/html
-      - ./privacypress:/var/www/html/wp-content/plugins/privacypress
+      - ./consentguard:/var/www/html/wp-content/plugins/consentguard
     depends_on:
       db:
         condition: service_healthy

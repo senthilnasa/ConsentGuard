@@ -4,8 +4,8 @@ Thanks for helping make consent management better for the WordPress
 community! Contributions of all kinds are welcome: bug reports, docs,
 translations, tracker-detection rules and code.
 
-- Repository: https://github.com/senthilnasa/PrivacyPress
-- Bug reports & feature requests: https://github.com/senthilnasa/PrivacyPress/issues
+- Repository: https://github.com/senthilnasa/ConsentGuard
+- Bug reports & feature requests: https://github.com/senthilnasa/ConsentGuard/issues
 - Security issues: see [SECURITY.md](SECURITY.md) — never a public issue.
 
 ## Ground rules
@@ -22,7 +22,7 @@ translations, tracker-detection rules and code.
 ## Workflow
 
 1. Fork and branch from `master`.
-2. `cd privacypress && composer install && npm install`
+2. `cd consentguard && composer install && npm install`
 3. Make your change, with tests:
    - PHP: `composer test` (PHPUnit, `tests/php`)
    - JS: `npm test` (Jest, `tests/js`)
@@ -40,7 +40,7 @@ the other plugin's documentation.
 
 ## Translations
 
-Regenerate the template with `wp i18n make-pot . languages/privacypress.pot`
+Regenerate the template with `wp i18n make-pot . languages/consentguard.pot`
 and submit locale files as standard `.po`.
 
 ## Security issues

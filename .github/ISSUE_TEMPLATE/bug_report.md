@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something in PrivacyPress is not working as expected
+about: Something in ConsentGuard is not working as expected
 labels: bug
 ---
 
@@ -15,12 +15,12 @@ A clear description of what went wrong.
 **Expected behaviour**
 
 **Environment**
-- PrivacyPress version:
+- ConsentGuard version:
 - WordPress version:
 - PHP version:
 - Active theme:
 - Other consent/analytics/caching plugins active:
 
 **Console/log output**
-Enable PrivacyPress → Tools → Debug Mode and paste any `[PCM]` console
+Enable ConsentGuard → Tools → Debug Mode and paste any `[PCM]` console
 lines or PHP notices here.
