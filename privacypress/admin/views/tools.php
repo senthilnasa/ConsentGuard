@@ -36,6 +36,28 @@ Admin::maybe_notice();
 
 <?php Admin::form_close(); ?>
 
+<h2><?php esc_html_e( 'Import / Export Settings', 'privacypress' ); ?></h2>
+<p>
+	<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=pcm_export_settings' ), 'pcm_export_settings', '_pcm_nonce' ) ); ?>">
+		<?php esc_html_e( 'Export settings (JSON)', 'privacypress' ); ?>
+	</a>
+</p>
+<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+	<?php wp_nonce_field( 'pcm_import_settings', '_pcm_nonce' ); ?>
+	<input type="hidden" name="action" value="pcm_import_settings" />
+	<textarea class="large-text code" rows="6" name="pcm_import_json" placeholder='{"banner": {...}, "ga4": {...}}'></textarea>
+	<p>
+		<button type="submit" class="button button-secondary"><?php esc_html_e( 'Import settings', 'privacypress' ); ?></button>
+		<span class="description"><?php esc_html_e( 'Paste an exported JSON. Every value is sanitized on import.', 'privacypress' ); ?></span>
+	</p>
+</form>
+
+<h2><?php esc_html_e( 'WP-CLI', 'privacypress' ); ?></h2>
+<pre class="pcm-code">wp privacypress stats
+wp privacypress scan
+wp privacypress cleanup
+wp privacypress export --file=consents.csv</pre>
+
 <h2><?php esc_html_e( 'Maintenance', 'privacypress' ); ?></h2>
 <p>
 	<?php

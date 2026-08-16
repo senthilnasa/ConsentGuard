@@ -85,7 +85,7 @@ function clearCookies() {
 	} );
 }
 
-function boot( configOverrides ) {
+function boot( configOverrides, preSetup ) {
 	jest.resetModules();
 	document.body.innerHTML = '';
 	window.PCMConfig = Object.assign( {}, JSON.parse( JSON.stringify( CONFIG ) ), configOverrides || {} );
@@ -93,6 +93,9 @@ function boot( configOverrides ) {
 	delete window.PCMBlocker;
 	delete window.PCMAnalytics;
 	window.dataLayer = [];
+	if ( typeof preSetup === 'function' ) {
+		preSetup(); // e.g. insert blocked embeds before the scripts boot.
+	}
 	require( '../../public/js/script-blocker.js' );
 	require( '../../public/js/analytics.js' );
 	require( '../../public/js/consent-manager.js' );
@@ -487,8 +490,84 @@ describe( 'floating revisit widget', () => {
 	} );
 } );
 
+describe( 'embed placeholders', () => {
+	beforeEach( () => clearCookies() );
+
+	function addBlockedEmbed() {
+		const frame = document.createElement( 'iframe' );
+		frame.setAttribute( 'data-pcm-src', 'https://www.youtube.com/embed/abc123' );
+		frame.setAttribute( 'data-pcm-category', 'functional' );
+		frame.setAttribute( 'data-pcm-blocked-embed', '1' );
+		document.body.appendChild( frame );
+		return frame;
+	}
+
+	test( 'blocked embeds get a placeholder card naming the category', () => {
+		let frame;
+		boot( null, () => {
+			frame = addBlockedEmbed();
+		} );
+		const card = document.querySelector( '.pcm-embed-placeholder' );
+		expect( card ).not.toBeNull();
+		expect( card.textContent ).toContain( 'Functional' );
+		expect( card.textContent ).toContain( 'www.youtube.com' );
+		expect( frame.src ).toBe( '' );
+	} );
+
+	test( 'Accept & load grants only that category and restores the iframe', () => {
+		let frame;
+		boot( null, () => {
+			frame = addBlockedEmbed();
+		} );
+		document.querySelector( '.pcm-embed-accept' ).click();
+
+		const consent = window.PrivacyConsent.getConsent();
+		expect( consent.functional ).toBe( true );
+		expect( consent.analytics ).toBe( false );
+		expect( consent.marketing ).toBe( false );
+		expect( frame.src ).toBe( 'https://www.youtube.com/embed/abc123' );
+		expect( document.querySelector( '.pcm-embed-placeholder' ) ).toBeNull();
+	} );
+
+	test( 'embeds load immediately when the category is already granted', () => {
+		boot();
+		window.PrivacyConsent.acceptAll();
+		// Simulate the next page view with stored consent + a blocked embed.
+		let frame;
+		boot( null, () => {
+			frame = addBlockedEmbed();
+		} );
+		expect( frame.src ).toBe( 'https://www.youtube.com/embed/abc123' );
+		expect( document.querySelector( '.pcm-embed-placeholder' ) ).toBeNull();
+	} );
+
+	test( 'grantCategory preserves previously granted categories', () => {
+		boot();
+		window.PrivacyConsent.openPreferences();
+		document.querySelector( '[data-pcm-toggle="analytics"]' ).checked = true;
+		document.querySelectorAll( '.pcm-modal .pcm-btn-primary' )[ 0 ].click();
+
+		window.PrivacyConsent.grantCategory( 'functional' );
+		const consent = window.PrivacyConsent.getConsent();
+		expect( consent.analytics ).toBe( true );
+		expect( consent.functional ).toBe( true );
+		expect( consent.marketing ).toBe( false );
+	} );
+} );
+
 describe( 'accessibility', () => {
 	beforeEach( () => clearCookies() );
+
+	test( 'banner announces itself via a polite live region', ( done ) => {
+		boot();
+		setTimeout( () => {
+			const live = document.getElementById( 'pcm-live-region' );
+			expect( live ).not.toBeNull();
+			expect( live.getAttribute( 'aria-live' ) ).toBe( 'polite' );
+			expect( live.textContent ).toBe( 'We value your privacy' );
+			done();
+		}, 150 );
+	} );
 
 	test( 'modal has dialog semantics and toggles are labelled', () => {
 		boot();

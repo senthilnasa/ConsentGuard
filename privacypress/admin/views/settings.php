@@ -68,10 +68,35 @@ Admin::maybe_notice();
 		</td>
 	</tr>
 	<tr>
+		<th scope="row"><label for="pcm-iframe-domains"><?php esc_html_e( 'Blocked embed/iframe domains', 'privacypress' ); ?></label></th>
+		<td>
+			<textarea id="pcm-iframe-domains" class="large-text code" rows="6" name="pcm_blocker_iframe_domains"><?php
+			foreach ( (array) ( $settings['blocker']['iframe_domains'] ?? array() ) as $pcm_domain => $pcm_category ) {
+				echo esc_textarea( $pcm_domain . ' ' . $pcm_category . "\n" );
+			}
+			?></textarea>
+			<p class="description"><?php esc_html_e( 'Embeds (YouTube, Vimeo, Spotify, Facebook, …) are replaced with an "Accept & load" placeholder until the visitor grants the category. One per line: domain followed by category. Hosts like www.google.com are not listed by default because that would also block reCAPTCHA.', 'privacypress' ); ?></p>
+		</td>
+	</tr>
+	<tr>
 		<th scope="row"><label for="pcm-allowlist"><?php esc_html_e( 'Allowlist', 'privacypress' ); ?></label></th>
 		<td>
 			<textarea id="pcm-allowlist" class="large-text code" rows="4" name="pcm_blocker_allowlist"><?php echo esc_textarea( implode( "\n", $settings['blocker']['allowlist'] ) ); ?></textarea>
 			<p class="description"><?php esc_html_e( 'Domains that must never be auto-blocked (one per line). The allowlist always wins.', 'privacypress' ); ?></p>
+		</td>
+	</tr>
+</table>
+
+<h2><?php esc_html_e( 'Translations', 'privacypress' ); ?></h2>
+<table class="form-table" role="presentation">
+	<tr>
+		<th scope="row"><label for="pcm-translations"><?php esc_html_e( 'Per-locale text overrides (JSON)', 'privacypress' ); ?></label></th>
+		<td>
+			<textarea id="pcm-translations" class="large-text code" rows="8" name="pcm_translations_json" placeholder='{"ta_IN": {"banner": {"title": "...", "message": "..."}, "categories": {"analytics": {"label": "...", "description": "..."}}}}'><?php
+			$pcm_translations = (array) ( $settings['translations'] ?? array() );
+			echo esc_textarea( $pcm_translations ? wp_json_encode( $pcm_translations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) : '' );
+			?></textarea>
+			<p class="description"><?php esc_html_e( 'Overrides the banner/modal texts and category labels for specific locales (e.g. ta_IN, hi_IN). Applied per request, so WPML/Polylang language switching is respected. Built-in plugin strings translate via standard .po files; WPML/Polylang users can alternatively use String Translation (a wpml-config.xml ships with the plugin).', 'privacypress' ); ?></p>
 		</td>
 	</tr>
 </table>

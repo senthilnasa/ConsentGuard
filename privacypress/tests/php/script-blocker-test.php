@@ -92,6 +92,36 @@ class Script_Blocker_Test extends TestCase {
 		$this->assertSame( $json, $this->blocker->filter_output( $json ) );
 	}
 
+	public function test_iframe_embed_domains_categorized() {
+		$this->assertSame( 'functional', $this->blocker->category_for_iframe( 'https://www.youtube.com/embed/abc123' ) );
+		$this->assertSame( 'functional', $this->blocker->category_for_iframe( 'https://player.vimeo.com/video/1' ) );
+		$this->assertSame( 'marketing', $this->blocker->category_for_iframe( 'https://www.facebook.com/plugins/like.php' ) );
+		$this->assertSame( '', $this->blocker->category_for_iframe( 'https://example.org/embed' ) );
+		$this->assertSame( '', $this->blocker->category_for_iframe( home_url( '/local-embed' ) ) );
+	}
+
+	public function test_iframe_allowlist_wins() {
+		update_option( 'pcm_settings', array( 'blocker' => array( 'allowlist' => array( 'youtube.com' ) ) ) );
+		PCM\Settings::instance()->flush_cache();
+		$this->assertSame( '', $this->blocker->category_for_iframe( 'https://www.youtube.com/embed/abc' ) );
+	}
+
+	public function test_filter_output_neutralizes_youtube_iframe() {
+		$html = '<html><body><iframe width="560" height="315" src="https://www.youtube.com/embed/abc123" allowfullscreen></iframe></body></html>';
+		$out  = $this->blocker->filter_output( $html );
+		$this->assertStringContainsString( 'data-pcm-src="https://www.youtube.com/embed/abc123"', $out );
+		$this->assertStringContainsString( 'data-pcm-category="functional"', $out );
+		$this->assertStringContainsString( 'data-pcm-blocked-embed="1"', $out );
+		$this->assertStringContainsString( 'width="560"', $out );
+		// The live src must be gone.
+		$this->assertStringNotContainsString( ' src="https://www.youtube.com/embed/abc123"', $out );
+	}
+
+	public function test_filter_output_leaves_unlisted_iframes_alone() {
+		$html = '<html><body><iframe src="https://example.org/widget"></iframe></body></html>';
+		$this->assertSame( $html, $this->blocker->filter_output( $html ) );
+	}
+
 	public function test_autoblock_category_filter_can_veto() {
 		add_filter(
 			'pcm_autoblock_category',

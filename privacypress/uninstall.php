@@ -39,7 +39,9 @@ function pcm_uninstall_site( $wpdb ) {
 	delete_option( 'pcm_last_scan' );
 	delete_option( 'pcm_ignored_conflicts' );
 	delete_option( 'pcm_conflict_mitigations' );
+	delete_option( 'pcm_discovered_cookies' );
 	delete_transient( 'pcm_consent_stats' );
+	delete_transient( 'pcm_daily_stats_30' );
 
 	// Per-user notice dismissals.
 	delete_metadata( 'user', 0, 'pcm_legal_notice_dismissed', '', true );

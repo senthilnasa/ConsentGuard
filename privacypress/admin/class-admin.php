@@ -76,6 +76,8 @@ class Admin {
 		add_action( 'admin_post_pcm_export_records', array( $this, 'handle_export_records' ) );
 		add_action( 'admin_post_pcm_delete_record', array( $this, 'handle_delete_record' ) );
 		add_action( 'admin_post_pcm_export_proof', array( $this, 'handle_export_proof' ) );
+		add_action( 'admin_post_pcm_export_settings', array( $this, 'handle_export_settings' ) );
+		add_action( 'admin_post_pcm_import_settings', array( $this, 'handle_import_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
@@ -223,6 +225,26 @@ class Admin {
 			}
 			$raw['blocker']['domains'] = $domains;
 		}
+		if ( isset( $_POST['pcm_blocker_iframe_domains'] ) && isset( $raw['blocker'] ) ) {
+			$iframes = array();
+			$lines   = explode( "\n", sanitize_textarea_field( wp_unslash( $_POST['pcm_blocker_iframe_domains'] ) ) );
+			foreach ( $lines as $line ) {
+				$parts = preg_split( '/\s+/', trim( $line ) );
+				if ( empty( $parts[0] ) ) {
+					continue;
+				}
+				$iframes[ $parts[0] ] = isset( $parts[1] ) ? $parts[1] : 'functional';
+			}
+			$raw['blocker']['iframe_domains'] = $iframes;
+		}
+		if ( isset( $_POST['pcm_translations_json'] ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized in Settings::sanitize().
+			$decoded             = json_decode( trim( wp_unslash( $_POST['pcm_translations_json'] ) ), true );
+			$raw['translations'] = is_array( $decoded ) ? $decoded : array();
+			if ( ! in_array( 'translations', $sections, true ) ) {
+				$sections[] = 'translations';
+			}
+		}
 		if ( isset( $_POST['pcm_blocker_allowlist'] ) && isset( $raw['blocker'] ) ) {
 			$raw['blocker']['allowlist'] = array_filter(
 				array_map( 'trim', explode( "\n", sanitize_textarea_field( wp_unslash( $_POST['pcm_blocker_allowlist'] ) ) ) )
@@ -241,6 +263,36 @@ class Admin {
 				}
 			}
 			$raw['jurisdictions']['rules'] = $rules;
+		}
+
+		// Discovered cookies assigned to a category join the inventory.
+		if ( isset( $_POST['pcm_discovered_assign'] ) && is_array( $_POST['pcm_discovered_assign'] ) ) {
+			$discovered = (array) get_option( 'pcm_discovered_cookies', array() );
+			$inventory  = (array) pcm_get_setting( 'cookies', array() );
+			$changed    = false;
+			foreach ( array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['pcm_discovered_assign'] ) ) as $name => $category ) {
+				$category = pcm_sanitize_category_slug( $category );
+				$name     = sanitize_text_field( $name );
+				if ( '' === $category || 'skip' === $category || '' === $name ) {
+					continue;
+				}
+				if ( 'dismiss' === $category ) {
+					unset( $discovered[ $name ] );
+					$changed = true;
+					continue;
+				}
+				$inventory[ $category ][] = array(
+					'name'        => $name,
+					'duration'    => '',
+					'description' => '',
+				);
+				unset( $discovered[ $name ] );
+				$changed = true;
+			}
+			if ( $changed ) {
+				update_option( 'pcm_discovered_cookies', $discovered, false );
+				Settings::instance()->update_section( 'cookies', $inventory );
+			}
 		}
 
 		// Cookie inventory textareas: "name | duration | description" lines.
@@ -583,6 +635,46 @@ class Admin {
 	}
 
 	/**
+	 * Downloads the full configuration as JSON (agency workflow).
+	 */
+	public function handle_export_settings() {
+		Security::verify_admin_action( 'pcm_export_settings' );
+
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=privacypress-settings-' . gmdate( 'Ymd' ) . '.json' );
+		echo wp_json_encode( pcm_get_settings(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON download.
+		exit;
+	}
+
+	/**
+	 * Imports a configuration JSON. Every value passes through
+	 * Settings::sanitize() — importing is exactly as safe as typing the
+	 * values into the forms.
+	 */
+	public function handle_import_settings() {
+		Security::verify_admin_action( 'pcm_import_settings' );
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized field-by-field below.
+		$json    = isset( $_POST['pcm_import_json'] ) ? trim( wp_unslash( $_POST['pcm_import_json'] ) ) : '';
+		$decoded = json_decode( $json, true );
+
+		if ( ! is_array( $decoded ) || empty( $decoded ) ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=pcm-tools&pcm-notice=import-failed' ) );
+			exit;
+		}
+
+		$sanitized = Settings::sanitize( $decoded );
+		$instance  = Settings::instance();
+		foreach ( $sanitized as $section => $values ) {
+			$instance->update_section( $section, $values );
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=pcm-tools&pcm-notice=import-done' ) );
+		exit;
+	}
+
+	/**
 	 * Deletes consent records matching a consent/anonymous ID.
 	 */
 	public function handle_delete_record() {
@@ -656,6 +748,8 @@ class Admin {
 				'policy-generated' => array( 'success', __( 'Cookie policy draft generated. Review it below and have it checked by your legal team before publishing.', 'privacypress' ) ),
 				'record-deleted'   => array( 'success', __( 'Matching consent records were deleted.', 'privacypress' ) ),
 				'record-not-found' => array( 'warning', __( 'No consent records matched that ID (a full UUID is required).', 'privacypress' ) ),
+				'import-done'      => array( 'success', __( 'Settings imported. Every value was sanitized on the way in — review the screens to confirm.', 'privacypress' ) ),
+				'import-failed'    => array( 'error', __( 'Import failed: the provided text is not valid JSON.', 'privacypress' ) ),
 			);
 			if ( isset( $messages[ $key ] ) ) {
 				printf(

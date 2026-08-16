@@ -83,6 +83,7 @@ PrivacyConsent.openPreferences();
 PrivacyConsent.getAnonymousId();        // UUID or null
 PrivacyConsent.isImplied();             // true while an opt-out profile implies consent
 PrivacyConsent.gpcDetected();           // Global Privacy Control active and respected
+PrivacyConsent.grantCategory('functional'); // grant ONE category (embed placeholders use this)
 ```
 
 The `[pcm_privacy_settings label="..."]` shortcode (or any element with the
@@ -161,6 +162,25 @@ add_filter( 'pcm_autoblock_category', function ( $category, $src ) {
 | `/scan` | POST | `manage_options` | run the duplicate-tracking scan |
 | `/records` | GET | `manage_options` | paginated consent records |
 | `/conflicts/{id}` | POST | `manage_options` | mitigate/unmitigate/ignore/unignore |
+| `/discovered` | POST | `manage_options` | queue unknown cookie names for classification |
+
+## Blocks, shortcode, Elementor, WP-CLI
+
+- Gutenberg: `privacypress/privacy-settings` (button, optional label) and
+  `privacypress/cookie-table` (live inventory table) — both dynamic.
+- Shortcode: `[pcm_privacy_settings label="..."]`; any element with class
+  `pcm-open-preferences` opens the modal.
+- Elementor: "Privacy Settings Button" widget (registered when Elementor is active).
+- WP-CLI: `wp privacypress stats`, `wp privacypress scan`,
+  `wp privacypress cleanup`, `wp privacypress export --file=consents.csv`.
+
+## Embed blocking
+
+Third-party iframes whose host matches `blocker.iframe_domains` are rewritten
+to `<iframe data-pcm-src=... data-pcm-category=...>`; the frontend renders an
+"Accept & load" placeholder that calls `PrivacyConsent.grantCategory()`.
+Override per iframe with the `pcm_autoblock_iframe_category` filter
+(return `''` to never block).
 
 The public `/consent` endpoint deliberately takes no nonce (it is called
 from fully cached pages where nonces go stale); it accepts only a strict

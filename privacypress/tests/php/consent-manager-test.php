@@ -150,6 +150,38 @@ class Consent_Manager_Test extends TestCase {
 		$this->assertSame( 'update', $record['action'] );
 	}
 
+	public function test_client_config_applies_locale_overrides() {
+		update_option(
+			'pcm_settings',
+			array(
+				'translations' => array(
+					'en_US' => array(
+						'banner'     => array( 'title' => 'Overridden Title' ),
+						'categories' => array( 'analytics' => array( 'label' => 'Insights' ) ),
+					),
+				),
+			)
+		);
+		PCM\Settings::instance()->flush_cache();
+
+		$config = ( new Consent_Manager( new Consent_Storage() ) )->get_client_config();
+		$this->assertSame( 'Overridden Title', $config['banner']['title'] );
+		$this->assertSame( 'Insights', $config['categories']['analytics']['label'] );
+	}
+
+	public function test_client_config_discovery_only_for_admins() {
+		$GLOBALS['pcm_test_user_caps']['manage_options'] = false;
+		$config = $this->manager->get_client_config();
+		$this->assertFalse( $config['discover'] );
+		$this->assertSame( '', $config['restNonce'] );
+
+		$GLOBALS['pcm_test_user_caps']['manage_options'] = true;
+		$config = $this->manager->get_client_config();
+		$this->assertTrue( $config['discover'] );
+		$this->assertNotSame( '', $config['restNonce'] );
+		$this->assertContains( 'pcm_consent', $config['knownCookies'] );
+	}
+
 	public function test_sanitize_record_region_is_bounded() {
 		$record = $this->manager->sanitize_record(
 			array(

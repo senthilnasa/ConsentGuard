@@ -1,8 +1,13 @@
 {
-    "name": "privacypress/privacypress",
+    "name": "senthilnasa/privacypress",
     "description": "Centralized privacy, consent, analytics and tracking management platform for WordPress.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
+    "homepage": "https://github.com/senthilnasa/PrivacyPress",
+    "support": {
+        "issues": "https://github.com/senthilnasa/PrivacyPress/issues",
+        "source": "https://github.com/senthilnasa/PrivacyPress"
+    },
     "require": {
         "php": ">=7.4"
     },

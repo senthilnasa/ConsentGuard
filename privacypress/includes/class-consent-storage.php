@@ -139,6 +139,59 @@ class Consent_Storage {
 	}
 
 	/**
+	 * Daily accept/reject/custom counts for the dashboard trend chart.
+	 * Cached for an hour.
+	 *
+	 * @param int $days Days back (max 90).
+	 * @return array[] Chronological: {date, accept, reject, custom}.
+	 */
+	public function get_daily_stats( $days = 30 ) {
+		$days   = max( 1, min( 90, (int) $days ) );
+		$cached = get_transient( 'pcm_daily_stats_' . $days );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		global $wpdb;
+		$table  = $this->table();
+		$cutoff = gmdate( 'Y-m-d 00:00:00', time() - $days * DAY_IN_SECONDS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DATE(created_at) AS day,
+					SUM(CASE WHEN action = 'accept_all' THEN 1 ELSE 0 END) AS accept_count,
+					SUM(CASE WHEN action IN ('reject_all','withdraw') THEN 1 ELSE 0 END) AS reject_count,
+					SUM(CASE WHEN action NOT IN ('accept_all','reject_all','withdraw') THEN 1 ELSE 0 END) AS custom_count
+				FROM {$table} WHERE created_at >= %s GROUP BY DATE(created_at) ORDER BY day ASC",
+				$cutoff
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$by_day = array();
+		foreach ( (array) $rows as $row ) {
+			$by_day[ $row['day'] ] = $row;
+		}
+
+		// Fill gaps so the chart has a point for every day.
+		$stats = array();
+		for ( $i = $days - 1; $i >= 0; $i-- ) {
+			$day     = gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS );
+			$stats[] = array(
+				'date'   => $day,
+				'accept' => (int) ( $by_day[ $day ]['accept_count'] ?? 0 ),
+				'reject' => (int) ( $by_day[ $day ]['reject_count'] ?? 0 ),
+				'custom' => (int) ( $by_day[ $day ]['custom_count'] ?? 0 ),
+			);
+		}
+
+		set_transient( 'pcm_daily_stats_' . $days, $stats, HOUR_IN_SECONDS );
+		return $stats;
+	}
+
+	/**
 	 * Deletes records older than the configured retention period.
 	 * Runs on the daily pcm_cleanup_consents cron event.
 	 *

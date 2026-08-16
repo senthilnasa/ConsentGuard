@@ -174,6 +174,9 @@ function get_locale() {
 function current_user_can( $cap ) {
 	return ! empty( $GLOBALS['pcm_test_user_caps'][ $cap ] );
 }
+function wp_create_nonce( $action = -1 ) {
+	return 'test-nonce';
+}
 function is_admin() {
 	return false;
 }

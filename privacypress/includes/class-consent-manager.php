@@ -236,6 +236,31 @@ class Consent_Manager {
 		$banner   = pcm_get_setting( 'banner', array() );
 		$policies = pcm_get_setting( 'policies', array() );
 
+		// Per-locale text overrides (Settings → Translations). The current
+		// locale reflects multilingual plugins (WPML/Polylang) per request.
+		$overrides = pcm_get_setting( 'translations.' . get_locale(), array() );
+		if ( ! empty( $overrides['banner'] ) && is_array( $overrides['banner'] ) ) {
+			$banner = array_merge( $banner, $overrides['banner'] );
+		}
+		if ( ! empty( $overrides['categories'] ) && is_array( $overrides['categories'] ) ) {
+			foreach ( $overrides['categories'] as $slug => $texts ) {
+				if ( isset( $categories[ $slug ] ) ) {
+					$categories[ $slug ] = array_merge( $categories[ $slug ], array_intersect_key( (array) $texts, array( 'label' => 1, 'description' => 1 ) ) );
+				}
+			}
+		}
+
+		// Cookie discovery runs only for administrators browsing the site.
+		$can_discover = current_user_can( 'manage_options' );
+		$known        = array( 'pcm_consent', 'wordpress_*', 'wp-*', 'wp_*', 'PHPSESSID', 'comment_*', '_ga*', '_gid', '_gat*', '_clck', '_clsk', '_fbp', '_gcl_*', 'CLID', 'MUID' );
+		foreach ( (array) pcm_get_setting( 'cookies', array() ) as $rows ) {
+			foreach ( (array) $rows as $row ) {
+				if ( ! empty( $row['name'] ) ) {
+					$known[] = $row['name'];
+				}
+			}
+		}
+
 		// Cookie inventory + managed services per category (modal detail tables).
 		$cookies = array();
 		foreach ( (array) pcm_get_setting( 'cookies', array() ) as $slug => $rows ) {
@@ -278,6 +303,10 @@ class Consent_Manager {
 			'storeRecords'   => (bool) pcm_get_setting( 'consent.store_records', true ),
 			'respectGpc'     => (bool) pcm_get_setting( 'advanced.respect_gpc', true ),
 			'debug'          => (bool) pcm_get_setting( 'advanced.debug', false ),
+			'discover'       => $can_discover,
+			'discoverUrl'    => $can_discover ? esc_url_raw( rest_url( 'pcm/v1/discovered' ) ) : '',
+			'restNonce'      => $can_discover ? wp_create_nonce( 'wp_rest' ) : '',
+			'knownCookies'   => array_values( array_unique( $known ) ),
 			'language'       => get_locale(),
 			'i18n'           => array(
 				'preferencesTitle' => __( 'Customise Consent Preferences', 'privacypress' ),
@@ -294,6 +323,9 @@ class Consent_Manager {
 				'noCookies'        => __( 'No cookies to display for this category.', 'privacypress' ),
 				'managedServices'  => __( 'Managed services', 'privacypress' ),
 				'expandCategory'   => __( 'Show cookie details for', 'privacypress' ),
+				/* translators: %s: consent category label */
+				'embedBlocked'     => __( 'This embedded content is blocked until you accept "%s" cookies.', 'privacypress' ),
+				'embedAccept'      => __( 'Accept & load', 'privacypress' ),
 			),
 		);
 	}

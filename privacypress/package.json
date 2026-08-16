@@ -4,6 +4,13 @@
     "description": "Centralized privacy, consent, analytics and tracking management platform for WordPress.",
     "private": true,
     "license": "GPL-2.0-or-later",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/senthilnasa/PrivacyPress.git"
+    },
+    "bugs": {
+        "url": "https://github.com/senthilnasa/PrivacyPress/issues"
+    },
     "scripts": {
         "test": "jest",
         "lint": "eslint public/js admin/js"

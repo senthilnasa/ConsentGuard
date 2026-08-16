@@ -68,6 +68,42 @@ Admin::maybe_notice();
 	</table>
 <?php endif; ?>
 
+<?php $pcm_discovered = (array) get_option( 'pcm_discovered_cookies', array() ); ?>
+<?php if ( ! empty( $pcm_discovered ) ) : ?>
+	<h2><?php esc_html_e( 'Discovered Cookies', 'privacypress' ); ?></h2>
+	<p class="description"><?php esc_html_e( 'Unknown cookies and localStorage keys observed while an administrator browsed the site. Assign each to a consent category (it joins the cookie inventory — add duration/description on the Consent Categories screen) or dismiss it.', 'privacypress' ); ?></p>
+	<?php Admin::form_open( array() ); ?>
+	<table class="widefat striped pcm-table" style="max-width:760px">
+		<thead>
+			<tr>
+				<th><?php esc_html_e( 'Name', 'privacypress' ); ?></th>
+				<th><?php esc_html_e( 'Type', 'privacypress' ); ?></th>
+				<th><?php esc_html_e( 'First seen (UTC)', 'privacypress' ); ?></th>
+				<th><?php esc_html_e( 'Assign', 'privacypress' ); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+		<?php foreach ( $pcm_discovered as $pcm_name => $pcm_meta ) : ?>
+			<tr>
+				<td><code><?php echo esc_html( $pcm_name ); ?></code></td>
+				<td><?php echo esc_html( $pcm_meta['type'] ?? 'cookie' ); ?></td>
+				<td><?php echo esc_html( $pcm_meta['first_seen'] ?? '' ); ?></td>
+				<td>
+					<select name="pcm_discovered_assign[<?php echo esc_attr( $pcm_name ); ?>]">
+						<option value="skip"><?php esc_html_e( '— Decide later —', 'privacypress' ); ?></option>
+						<?php foreach ( $settings['categories'] as $pcm_slug => $pcm_cat ) : ?>
+							<option value="<?php echo esc_attr( $pcm_slug ); ?>"><?php echo esc_html( $pcm_cat['label'] ); ?></option>
+						<?php endforeach; ?>
+						<option value="dismiss"><?php esc_html_e( 'Dismiss (not a tracker)', 'privacypress' ); ?></option>
+					</select>
+				</td>
+			</tr>
+		<?php endforeach; ?>
+		</tbody>
+	</table>
+	<?php Admin::form_close(); ?>
+<?php endif; ?>
+
 <?php if ( ! empty( $pcm_scan['scripts'] ) ) : ?>
 	<h2><?php esc_html_e( 'Third-Party Scripts', 'privacypress' ); ?></h2>
 	<?php Admin::form_open( array( 'scanner' ) ); ?>

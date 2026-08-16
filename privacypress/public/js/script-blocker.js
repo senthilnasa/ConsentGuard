@@ -71,7 +71,22 @@
 	}
 
 	/**
-	 * Executes every blocked script whose category is granted.
+	 * Restores a blocked embed iframe (moves data-pcm-src back to src).
+	 */
+	function activateIframe( node ) {
+		var src = node.getAttribute( 'data-pcm-src' );
+		if ( ! src ) {
+			return;
+		}
+		node.removeAttribute( 'data-pcm-src' );
+		node.setAttribute( 'data-pcm-activated', '1' );
+		node.src = src;
+		log( 'Embed unblocked: ' + src );
+	}
+
+	/**
+	 * Executes every blocked script and restores every blocked embed whose
+	 * category is granted.
 	 *
 	 * @param {Object} consent category => boolean map.
 	 */
@@ -88,6 +103,14 @@
 				activate( node );
 			} else if ( window.PCMDebug && ! wasExecuted( node ) ) {
 				log( ( node.getAttribute( 'data-pcm-id' ) || 'script' ) + ' blocked (' + category + ')' );
+			}
+		}
+
+		var iframes = document.querySelectorAll( 'iframe[data-pcm-src][data-pcm-category]' );
+		for ( i = 0; i < iframes.length; i++ ) {
+			node = iframes[ i ];
+			if ( consent[ node.getAttribute( 'data-pcm-category' ) ] === true ) {
+				activateIframe( node );
 			}
 		}
 	}

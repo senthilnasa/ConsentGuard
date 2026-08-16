@@ -197,6 +197,43 @@ class Settings_Test extends TestCase {
 		$this->assertArrayHasKey( 'badcat', $out['cookies'] );
 	}
 
+	public function test_sanitize_iframe_domains() {
+		$out = Settings::sanitize(
+			array(
+				'blocker' => array(
+					'iframe_domains' => array(
+						'youtube.com' => 'functional',
+						'bad domain'  => 'functional',
+					),
+				),
+			)
+		);
+		$this->assertSame( array( 'youtube.com' => 'functional' ), $out['blocker']['iframe_domains'] );
+	}
+
+	public function test_sanitize_translations() {
+		$out = Settings::sanitize(
+			array(
+				'translations' => array(
+					'ta_IN'      => array(
+						'banner'     => array(
+							'title' => 'உங்கள் தனியுரிமையை மதிக்கிறோம்',
+							'evil'  => 'dropped',
+						),
+						'categories' => array(
+							'analytics' => array( 'label' => 'பகுப்பாய்வு' ),
+						),
+					),
+					'bad locale!' => array( 'banner' => array( 'title' => 'x' ) ),
+				),
+			)
+		);
+		$this->assertSame( 'உங்கள் தனியுரிமையை மதிக்கிறோம்', $out['translations']['ta_IN']['banner']['title'] );
+		$this->assertArrayNotHasKey( 'evil', $out['translations']['ta_IN']['banner'] );
+		$this->assertSame( 'பகுப்பாய்வு', $out['translations']['ta_IN']['categories']['analytics']['label'] );
+		$this->assertCount( 1, $out['translations'] );
+	}
+
 	public function test_sanitize_reopen_widget_settings() {
 		$out = Settings::sanitize(
 			array(

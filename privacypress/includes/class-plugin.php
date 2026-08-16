@@ -71,6 +71,7 @@ final class Plugin {
 		$this->modules['policies']        = new Policy_Manager();
 		$this->modules['rest']            = new Rest_Api( $storage, $this->modules['duplicates'] );
 		$this->modules['security']        = new Security();
+		$this->modules['blocks']          = new Blocks();
 
 		foreach ( $this->modules as $module ) {
 			if ( method_exists( $module, 'register' ) ) {
@@ -93,6 +94,13 @@ final class Plugin {
 		add_action( 'pcm_cleanup_consents', array( $storage, 'cleanup_expired' ) );
 		add_action( 'admin_init', array( Activator::class, 'maybe_upgrade' ) );
 
+		// Multisite: provision new subsites (activation hooks don't fire there).
+		add_action( 'wp_initialize_site', array( Activator::class, 'initialize_new_site' ), 100 );
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			\WP_CLI::add_command( 'privacypress', CLI::class );
+		}
+
 		/**
 		 * Fires after every plugin module has been registered.
 		 *
@@ -112,6 +120,7 @@ final class Plugin {
 			'google-analytics.php',
 			'google-tag-manager.php',
 			'wp-consent-api.php',
+			'elementor.php',
 			'generic.php',
 		);
 		foreach ( $integrations as $file ) {

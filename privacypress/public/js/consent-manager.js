@@ -292,6 +292,14 @@
 		withdraw: function () {
 			decide( {}, 'withdraw' );
 		},
+		grantCategory: function ( slug ) {
+			if ( ! cfg.categories[ slug ] ) {
+				return;
+			}
+			var merged = state ? normalize( state ) : normalize( {} );
+			merged[ slug ] = true;
+			decide( merged, 'custom' );
+		},
 		openPreferences: function () {
 			showModal();
 		},
@@ -409,10 +417,26 @@
 		return wrap;
 	}
 
+	function announce( text ) {
+		var live = document.getElementById( 'pcm-live-region' );
+		if ( ! live ) {
+			live = el( 'div', 'pcm-sr-only', {
+				id: 'pcm-live-region',
+				'aria-live': 'polite',
+				role: 'status'
+			} );
+			document.body.appendChild( live );
+		}
+		window.setTimeout( function () {
+			live.textContent = text;
+		}, 100 );
+	}
+
 	function showBanner() {
 		if ( ! ui.banner ) {
 			ui.banner = buildBanner();
 			document.body.appendChild( ui.banner );
+			announce( ( cfg.banner && cfg.banner.title ) || 'Cookie consent' );
 		}
 		ui.banner.classList.add( 'pcm-visible' );
 	}
@@ -838,6 +862,120 @@
 	}
 
 	/* ------------------------------------------------------------------ *
+	 * Blocked embed placeholders
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * Replaces every still-blocked embed iframe with a consent card:
+	 * "This content is blocked… [Accept & load]". Accepting grants only
+	 * that embed's category. Cards remove themselves once the category
+	 * is granted (unblock() restores the iframe src).
+	 */
+	function renderEmbedPlaceholders() {
+		var iframes = document.querySelectorAll( 'iframe[data-pcm-src][data-pcm-category]' );
+		var i;
+
+		for ( i = 0; i < iframes.length; i++ ) {
+			( function ( frame ) {
+				var category = frame.getAttribute( 'data-pcm-category' );
+				if ( ( state && state[ category ] === true ) || frame.__pcmPlaceholder ) {
+					return;
+				}
+				var label = ( cfg.categories[ category ] && cfg.categories[ category ].label ) || category;
+
+				var card = el( 'div', 'pcm-embed-placeholder ' + themeClass() );
+				var text = el( 'p', 'pcm-embed-text' );
+				text.textContent = ( i18n.embedBlocked ||
+					'This embedded content is blocked until you accept "%s" cookies.' ).replace( '%s', label );
+				card.appendChild( text );
+
+				var host = el( 'p', 'pcm-embed-host' );
+				try {
+					host.textContent = new URL( frame.getAttribute( 'data-pcm-src' ), window.location.href ).hostname;
+				} catch ( e ) {
+					host.textContent = '';
+				}
+				card.appendChild( host );
+
+				card.appendChild( button( ( i18n.embedAccept || 'Accept & load' ), 'pcm-btn-primary pcm-embed-accept', function () {
+					window.PrivacyConsent.grantCategory( category );
+				} ) );
+
+				frame.__pcmPlaceholder = card;
+				frame.parentNode.insertBefore( card, frame );
+
+				var cleanup = window.PrivacyConsent.onChange( function ( consent ) {
+					if ( consent && consent[ category ] === true ) {
+						if ( card.parentNode ) {
+							card.parentNode.removeChild( card );
+						}
+						cleanup();
+					}
+				} );
+			}( iframes[ i ] ) );
+		}
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Cookie discovery (administrators only)
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * When an administrator browses the frontend, unknown cookie names and
+	 * localStorage keys are reported to the site (admin-authenticated REST)
+	 * so they can be classified into the cookie inventory. Runs only for
+	 * manage_options users — never for visitors.
+	 */
+	function discoverCookies() {
+		if ( ! cfg.discover || ! cfg.discoverUrl || ! cfg.restNonce || ! window.fetch ) {
+			return;
+		}
+		var known = cfg.knownCookies || [];
+		function isKnown( name ) {
+			var i, pattern;
+			for ( i = 0; i < known.length; i++ ) {
+				pattern = known[ i ];
+				if ( pattern === name ) {
+					return true;
+				}
+				if ( pattern.slice( -1 ) === '*' && name.indexOf( pattern.slice( 0, -1 ) ) === 0 ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		var found = [];
+		( document.cookie ? document.cookie.split( ';' ) : [] ).forEach( function ( entry ) {
+			var name = entry.split( '=' )[ 0 ].replace( /^\s+/, '' );
+			if ( name && ! isKnown( name ) ) {
+				found.push( { name: name, type: 'cookie' } );
+			}
+		} );
+		try {
+			for ( var i = 0; i < window.localStorage.length; i++ ) {
+				var key = window.localStorage.key( i );
+				if ( key && key.indexOf( 'pcm' ) !== 0 && ! isKnown( key ) ) {
+					found.push( { name: key, type: 'localStorage' } );
+				}
+			}
+		} catch ( e ) { /* storage blocked */ }
+
+		if ( ! found.length ) {
+			return;
+		}
+		fetch( cfg.discoverUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': cfg.restNonce
+			},
+			credentials: 'same-origin',
+			body: JSON.stringify( { items: found.slice( 0, 50 ) } )
+		} ).catch( function () { /* non-critical */ } );
+	}
+
+	/* ------------------------------------------------------------------ *
 	 * Boot
 	 * ------------------------------------------------------------------ */
 
@@ -879,6 +1017,9 @@
 		} else if ( cfg.shouldRender ) {
 			showBanner();
 		}
+
+		renderEmbedPlaceholders();
+		discoverCookies();
 
 		// Delegated reopen support: any element with .pcm-open-preferences
 		// (e.g. a footer link added by the site owner) opens the modal.

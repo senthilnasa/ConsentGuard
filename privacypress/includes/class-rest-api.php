@@ -133,6 +133,16 @@ class Rest_Api {
 
 		register_rest_route(
 			'pcm/v1',
+			'/discovered',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'record_discovered' ),
+				'permission_callback' => array( $this, 'admin_permission' ),
+			)
+		);
+
+		register_rest_route(
+			'pcm/v1',
 			'/conflicts/(?P<id>[a-z0-9:_-]+)',
 			array(
 				'methods'             => \WP_REST_Server::CREATABLE,
@@ -214,6 +224,37 @@ class Rest_Api {
 			return $result;
 		}
 		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * POST /discovered — records unknown cookie/localStorage names spotted
+	 * by an administrator's browser for later classification. Admin-only.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public function record_discovered( \WP_REST_Request $request ) {
+		$items      = (array) $request->get_param( 'items' );
+		$discovered = (array) get_option( 'pcm_discovered_cookies', array() );
+		$added      = 0;
+
+		foreach ( array_slice( $items, 0, 50 ) as $item ) {
+			$name = sanitize_text_field( (string) ( $item['name'] ?? '' ) );
+			$type = in_array( $item['type'] ?? '', array( 'cookie', 'localStorage' ), true ) ? $item['type'] : 'cookie';
+			if ( '' === $name || strlen( $name ) > 128 || isset( $discovered[ $name ] ) ) {
+				continue;
+			}
+			$discovered[ $name ] = array(
+				'type'       => $type,
+				'first_seen' => current_time( 'mysql', true ),
+			);
+			$added++;
+		}
+		if ( $added > 0 ) {
+			// Bounded: keep at most 200 pending discoveries.
+			update_option( 'pcm_discovered_cookies', array_slice( $discovered, -200, null, true ), false );
+		}
+		return rest_ensure_response( array( 'added' => $added ) );
 	}
 
 	/**

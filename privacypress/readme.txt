@@ -1,5 +1,6 @@
 === PrivacyPress ===
-Contributors: pcmcontributors
+Contributors: senthilnasa
+Plugin URI: https://github.com/senthilnasa/PrivacyPress
 Tags: consent, gdpr, dpdp, cookie banner, analytics
 Requires at least: 6.2
 Tested up to: 6.6

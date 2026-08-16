@@ -78,7 +78,10 @@ class Script_Blocker {
 	 * @return string
 	 */
 	public function filter_output( $html ) {
-		if ( ! is_string( $html ) || '' === $html || false === stripos( $html, '<script' ) ) {
+		if ( ! is_string( $html ) || '' === $html ) {
+			return $html;
+		}
+		if ( false === stripos( $html, '<script' ) && false === stripos( $html, '<iframe' ) ) {
 			return $html;
 		}
 
@@ -92,6 +95,17 @@ class Script_Blocker {
 			array( $this, 'maybe_block_tag' ),
 			$html
 		);
+
+		if ( is_string( $result ) ) {
+			$iframes = preg_replace_callback(
+				'#<iframe\b([^>]*)>#i',
+				array( $this, 'maybe_block_iframe' ),
+				$result
+			);
+			if ( is_string( $iframes ) ) {
+				$result = $iframes;
+			}
+		}
 
 		// Fail open: on regex failure (e.g. backtrack limit) keep the original page.
 		return is_string( $result ) ? $result : $html;
@@ -149,6 +163,77 @@ class Script_Blocker {
 			$attrs,
 			$body
 		);
+	}
+
+	/**
+	 * Neutralizes third-party embed iframes (YouTube, Vimeo, …) until the
+	 * matching category is granted. The src moves to data-pcm-src; the
+	 * frontend renders a consent placeholder card in its place.
+	 *
+	 * @param array $match [full opening tag, attributes].
+	 * @return string
+	 */
+	public function maybe_block_iframe( $match ) {
+		list( $tag, $attrs ) = $match;
+
+		if ( false !== stripos( $attrs, 'data-pcm-' ) ) {
+			return $tag;
+		}
+		if ( ! preg_match( '/\bsrc\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s>]+))/i', $attrs, $m ) ) {
+			return $tag;
+		}
+		$src      = ! empty( $m[2] ) ? $m[2] : ( ! empty( $m[3] ) ? $m[3] : ( $m[4] ?? '' ) );
+		$category = $this->category_for_iframe( $src );
+
+		/**
+		 * Filters the blocking decision for an embed iframe.
+		 *
+		 * @param string $category Category to require ('' = don't block).
+		 * @param string $src      Iframe src.
+		 */
+		$category = apply_filters( 'pcm_autoblock_iframe_category', $category, $src );
+		if ( '' === $category ) {
+			return $tag;
+		}
+
+		$attrs = preg_replace( '/\ssrc\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $attrs );
+		return sprintf(
+			'<iframe data-pcm-src="%s" data-pcm-category="%s" data-pcm-blocked-embed="1"%s>',
+			esc_url( $src ),
+			esc_attr( $category ),
+			$attrs
+		);
+	}
+
+	/**
+	 * Maps an iframe URL to a consent category via the embed domain list.
+	 *
+	 * @param string $url Iframe URL.
+	 * @return string Category slug or '' when the iframe must not be blocked.
+	 */
+	public function category_for_iframe( $url ) {
+		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		if ( '' === $host ) {
+			return '';
+		}
+
+		$site_host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		if ( $host === $site_host ) {
+			return '';
+		}
+
+		foreach ( (array) pcm_get_setting( 'blocker.allowlist', array() ) as $allowed ) {
+			if ( $this->host_matches( $host, $allowed ) ) {
+				return '';
+			}
+		}
+
+		foreach ( (array) pcm_get_setting( 'blocker.iframe_domains', array() ) as $domain => $category ) {
+			if ( $this->host_matches( $host, $domain ) ) {
+				return pcm_sanitize_category_slug( $category ) ?: 'functional';
+			}
+		}
+		return '';
 	}
 
 	/**

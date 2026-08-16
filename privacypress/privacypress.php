@@ -1,12 +1,13 @@
 <?php
 /**
  * Plugin Name:       PrivacyPress
- * Plugin URI:        https://example.com/privacypress
- * Description:       Centralized privacy, consent, analytics and tracking management platform. Manages GA4, Google Consent Mode v2, Microsoft Clarity, Cloudflare Web Analytics, GTM and custom scripts, and detects duplicate tracking injected by other plugins.
+ * Plugin URI:        https://github.com/senthilnasa/PrivacyPress
+ * Description:       Centralized privacy, consent, analytics and tracking management platform. Manages GA4, Google Consent Mode v2, Microsoft Clarity, Cloudflare Web Analytics, GTM, custom scripts and embeds — and detects duplicate tracking injected by other plugins.
  * Version:           1.0.0
  * Requires at least: 6.2
  * Requires PHP:      7.4
- * Author:            PrivacyPress Contributors
+ * Author:            Senthilnasa & PrivacyPress Contributors
+ * Author URI:        https://github.com/senthilnasa
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       privacypress

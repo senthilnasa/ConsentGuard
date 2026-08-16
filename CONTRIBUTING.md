@@ -4,6 +4,10 @@ Thanks for helping make consent management better for the WordPress
 community! Contributions of all kinds are welcome: bug reports, docs,
 translations, tracker-detection rules and code.
 
+- Repository: https://github.com/senthilnasa/PrivacyPress
+- Bug reports & feature requests: https://github.com/senthilnasa/PrivacyPress/issues
+- Security issues: see [SECURITY.md](SECURITY.md) — never a public issue.
+
 ## Ground rules
 
 - **Privacy first.** PRs must never add IP/PII collection, external

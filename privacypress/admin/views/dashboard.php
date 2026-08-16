@@ -20,8 +20,58 @@ $pcm_statuses  = pcm()->module( 'analytics' ) ? pcm()->module( 'analytics' )->st
 $pcm_total     = max( 1, $pcm_stats['total'] );
 
 Admin::maybe_notice();
+
+if ( $pcm_stats['total'] > 500000 ) {
+	printf(
+		'<div class="notice notice-warning"><p>%s</p></div>',
+		esc_html__( 'The consent records table holds more than 500,000 rows. Consider lowering the retention period (Settings) so cleanup keeps the table lean.', 'privacypress' )
+	);
+}
 ?>
 <h1><?php esc_html_e( 'PrivacyPress', 'privacypress' ); ?></h1>
+
+<?php
+// 30-day consent trend, rendered as a dependency-free stacked bar SVG.
+$pcm_daily = $storage->get_daily_stats( 30 );
+$pcm_max   = 1;
+foreach ( $pcm_daily as $pcm_day ) {
+	$pcm_max = max( $pcm_max, $pcm_day['accept'] + $pcm_day['reject'] + $pcm_day['custom'] );
+}
+$pcm_has_data = array_sum( array_map( static function ( $d ) { return $d['accept'] + $d['reject'] + $d['custom']; }, $pcm_daily ) ) > 0;
+if ( $pcm_has_data ) :
+	$pcm_w = 24;
+	$pcm_h = 120;
+	?>
+	<div class="pcm-card">
+		<h2><?php esc_html_e( 'Consent decisions — last 30 days', 'privacypress' ); ?></h2>
+		<svg viewBox="0 0 <?php echo esc_attr( count( $pcm_daily ) * $pcm_w ); ?> <?php echo esc_attr( $pcm_h + 18 ); ?>" width="100%" height="150" role="img"
+			aria-label="<?php esc_attr_e( 'Stacked daily bars of accepted, customized and rejected consents over the last 30 days', 'privacypress' ); ?>">
+			<?php foreach ( $pcm_daily as $pcm_i => $pcm_day ) : ?>
+				<?php
+				$pcm_x  = $pcm_i * $pcm_w + 3;
+				$pcm_ha = round( $pcm_h * $pcm_day['accept'] / $pcm_max );
+				$pcm_hc = round( $pcm_h * $pcm_day['custom'] / $pcm_max );
+				$pcm_hr = round( $pcm_h * $pcm_day['reject'] / $pcm_max );
+				$pcm_y  = $pcm_h;
+				?>
+				<g>
+					<title><?php echo esc_html( $pcm_day['date'] . ' — ✓' . $pcm_day['accept'] . ' ~' . $pcm_day['custom'] . ' ✕' . $pcm_day['reject'] ); ?></title>
+					<?php $pcm_y -= $pcm_ha; ?>
+					<rect x="<?php echo esc_attr( $pcm_x ); ?>" y="<?php echo esc_attr( $pcm_y ); ?>" width="<?php echo esc_attr( $pcm_w - 6 ); ?>" height="<?php echo esc_attr( $pcm_ha ); ?>" fill="#22a06b" rx="1"></rect>
+					<?php $pcm_y -= $pcm_hc; ?>
+					<rect x="<?php echo esc_attr( $pcm_x ); ?>" y="<?php echo esc_attr( $pcm_y ); ?>" width="<?php echo esc_attr( $pcm_w - 6 ); ?>" height="<?php echo esc_attr( $pcm_hc ); ?>" fill="#e2a400" rx="1"></rect>
+					<?php $pcm_y -= $pcm_hr; ?>
+					<rect x="<?php echo esc_attr( $pcm_x ); ?>" y="<?php echo esc_attr( $pcm_y ); ?>" width="<?php echo esc_attr( $pcm_w - 6 ); ?>" height="<?php echo esc_attr( $pcm_hr ); ?>" fill="#c9372c" rx="1"></rect>
+				</g>
+			<?php endforeach; ?>
+		</svg>
+		<p class="description">
+			<span style="color:#22a06b">■</span> <?php esc_html_e( 'Accepted all', 'privacypress' ); ?>
+			&nbsp;<span style="color:#e2a400">■</span> <?php esc_html_e( 'Customized', 'privacypress' ); ?>
+			&nbsp;<span style="color:#c9372c">■</span> <?php esc_html_e( 'Rejected / withdrawn', 'privacypress' ); ?>
+		</p>
+	</div>
+<?php endif; ?>
 
 <div class="pcm-cards">
 	<div class="pcm-card">

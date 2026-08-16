@@ -1,0 +1,26 @@
+<wpml-config>
+    <!-- Makes the admin-entered PrivacyPress texts translatable via
+         WPML / Polylang String Translation. Locale-specific overrides can
+         alternatively be configured under PrivacyPress → Settings →
+         Translations without any multilingual plugin. -->
+    <admin-texts>
+        <key name="pcm_settings">
+            <key name="banner">
+                <key name="title" />
+                <key name="message" />
+                <key name="preferences_intro" />
+                <key name="accept_label" />
+                <key name="reject_label" />
+                <key name="manage_label" />
+                <key name="save_label" />
+                <key name="reopen_label" />
+            </key>
+            <key name="dpdp">
+                <key name="notice_text" />
+                <key name="purpose_text" />
+                <key name="rights_text" />
+                <key name="grievance_info" />
+            </key>
+        </key>
+    </admin-texts>
+</wpml-config>

@@ -16,8 +16,25 @@ class Activator {
 
 	/**
 	 * Runs on plugin activation.
+	 *
+	 * @param bool $network_wide Network activation on multisite.
 	 */
-	public static function activate() {
+	public static function activate( $network_wide = false ) {
+		if ( $network_wide && is_multisite() ) {
+			foreach ( get_sites( array( 'fields' => 'ids' ) ) as $site_id ) {
+				switch_to_blog( $site_id );
+				self::activate_single();
+				restore_current_blog();
+			}
+			return;
+		}
+		self::activate_single();
+	}
+
+	/**
+	 * Activation steps for one site.
+	 */
+	private static function activate_single() {
 		self::create_tables();
 		self::seed_defaults();
 
@@ -26,6 +43,24 @@ class Activator {
 		}
 
 		update_option( 'pcm_db_version', PCM_DB_VERSION );
+	}
+
+	/**
+	 * Provisions a newly created multisite subsite (activation hooks do not
+	 * run for new sites when the plugin is network-activated).
+	 *
+	 * @param \WP_Site $new_site New site object.
+	 */
+	public static function initialize_new_site( $new_site ) {
+		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		if ( ! is_plugin_active_for_network( PCM_PLUGIN_BASENAME ) ) {
+			return;
+		}
+		switch_to_blog( (int) $new_site->blog_id );
+		self::activate_single();
+		restore_current_blog();
 	}
 
 	/**

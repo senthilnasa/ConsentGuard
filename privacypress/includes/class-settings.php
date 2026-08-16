@@ -121,10 +121,12 @@ class Settings {
 			'custom_scripts' => array(),
 			'cookies'       => self::default_cookie_inventory(),
 			'blocker'       => array(
-				'enabled'   => true,
-				'domains'   => self::default_blocked_domains(),
-				'allowlist' => array(),
+				'enabled'        => true,
+				'domains'        => self::default_blocked_domains(),
+				'iframe_domains' => self::default_iframe_domains(),
+				'allowlist'      => array(),
 			),
+			'translations'  => array(), // locale => {banner: {...}, categories: {slug: {label, description}}}.
 			'jurisdictions' => array(
 				'geo_enabled'     => false,
 				'default_profile' => 'gdpr',
@@ -283,6 +285,30 @@ class Settings {
 	}
 
 	/**
+	 * Embed/iframe hosts blocked until consent, with placeholder cards.
+	 * Deliberately conservative: hosts like www.google.com are NOT listed
+	 * by default because that would also block reCAPTCHA; administrators
+	 * can add maps.google.com etc. themselves.
+	 *
+	 * @return array<string,string> domain => category.
+	 */
+	public static function default_iframe_domains() {
+		return array(
+			'youtube.com'          => 'functional',
+			'youtube-nocookie.com' => 'functional',
+			'youtu.be'             => 'functional',
+			'vimeo.com'            => 'functional',
+			'player.vimeo.com'     => 'functional',
+			'dailymotion.com'      => 'functional',
+			'open.spotify.com'     => 'functional',
+			'w.soundcloud.com'     => 'functional',
+			'facebook.com'         => 'marketing',
+			'instagram.com'        => 'marketing',
+			'tiktok.com'           => 'marketing',
+		);
+	}
+
+	/**
 	 * Default jurisdiction consent profiles.
 	 *
 	 * @return array
@@ -373,12 +399,15 @@ class Settings {
 		);
 
 		// Replace-style keys where merging would resurrect deleted entries.
-		$replace = array( 'custom_scripts', 'categories', 'cookies' );
+		$replace = array( 'custom_scripts', 'categories', 'cookies', 'translations' );
 		if ( in_array( $section, $replace, true ) ) {
 			$all[ $section ] = $values;
 		}
 		if ( 'blocker' === $section && isset( $values['domains'] ) ) {
 			$all['blocker']['domains'] = $values['domains'];
+		}
+		if ( 'blocker' === $section && isset( $values['iframe_domains'] ) ) {
+			$all['blocker']['iframe_domains'] = $values['iframe_domains'];
 		}
 		if ( 'blocker' === $section && isset( $values['allowlist'] ) ) {
 			$all['blocker']['allowlist'] = $values['allowlist'];
@@ -646,6 +675,18 @@ class Settings {
 				}
 				$out['blocker']['domains'] = $domains;
 			}
+			if ( array_key_exists( 'iframe_domains', $bl ) ) {
+				$iframes = array();
+				foreach ( (array) $bl['iframe_domains'] as $domain => $category ) {
+					$is_list = is_int( $domain );
+					$domain  = pcm_sanitize_domain( $is_list ? $category : $domain );
+					if ( '' === $domain ) {
+						continue;
+					}
+					$iframes[ $domain ] = $is_list ? 'functional' : ( pcm_sanitize_category_slug( $category ) ?: 'functional' );
+				}
+				$out['blocker']['iframe_domains'] = $iframes;
+			}
 			if ( array_key_exists( 'allowlist', $bl ) ) {
 				$allow = array();
 				foreach ( (array) $bl['allowlist'] as $domain ) {
@@ -656,6 +697,43 @@ class Settings {
 				}
 				$out['blocker']['allowlist'] = array_values( array_unique( $allow ) );
 			}
+		}
+
+		if ( isset( $input['translations'] ) && is_array( $input['translations'] ) ) {
+			$translations = array();
+			foreach ( $input['translations'] as $locale => $override ) {
+				// Valid WordPress locales only: "ta", "ta_IN", "zh_Hans_CN"…
+				if ( ! is_array( $override ) || ! preg_match( '/^[a-z]{2,3}(_[A-Za-z]{2,10}){0,2}$/', (string) $locale ) ) {
+					continue;
+				}
+				$clean = array();
+				if ( isset( $override['banner'] ) && is_array( $override['banner'] ) ) {
+					$allowed_text = array( 'title', 'message', 'preferences_intro', 'accept_label', 'reject_label', 'manage_label', 'save_label', 'reopen_label' );
+					foreach ( $allowed_text as $key ) {
+						if ( isset( $override['banner'][ $key ] ) ) {
+							$clean['banner'][ $key ] = sanitize_textarea_field( $override['banner'][ $key ] );
+						}
+					}
+				}
+				if ( isset( $override['categories'] ) && is_array( $override['categories'] ) ) {
+					foreach ( $override['categories'] as $slug => $texts ) {
+						$slug = pcm_sanitize_category_slug( $slug );
+						if ( '' === $slug || ! is_array( $texts ) ) {
+							continue;
+						}
+						if ( isset( $texts['label'] ) ) {
+							$clean['categories'][ $slug ]['label'] = sanitize_text_field( $texts['label'] );
+						}
+						if ( isset( $texts['description'] ) ) {
+							$clean['categories'][ $slug ]['description'] = sanitize_textarea_field( $texts['description'] );
+						}
+					}
+				}
+				if ( $clean ) {
+					$translations[ $locale ] = $clean;
+				}
+			}
+			$out['translations'] = $translations;
 		}
 
 		if ( isset( $input['jurisdictions'] ) ) {

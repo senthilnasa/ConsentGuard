@@ -1,6 +1,7 @@
 # Changelog
 
 All notable changes to PrivacyPress.
+Repository: https://github.com/senthilnasa/PrivacyPress
 
 ## [1.0.0] — 2026-08-15
 
@@ -38,6 +39,15 @@ All notable changes to PrivacyPress.
 - Floating revisit widget: round icon button (built-in cookie glyph or admin logo), tooltip, four admin-selectable default corners, and visitor drag-anywhere with position memory.
 - "Match site theme": banner/modal colors derive from the active block theme's palette automatically.
 - Proof-of-consent PDF v2: branded header band with the project name and domain, colored category statuses, shaded cookie boxes, separator rules.
+- Embed/iframe blocking with consent placeholders: YouTube, Vimeo, Spotify, Facebook and other embeds stay blocked behind an animated "Accept & load" card that grants only that embed's category; configurable embed domain list (reCAPTCHA-safe defaults).
+- Cookie discovery: unknown cookies/localStorage keys observed while an administrator browses the site are queued on the Scanner screen for one-click classification into the inventory (admin-only collector, never runs for visitors).
+- Per-locale text overrides (Settings → Translations) applied per request so WPML/Polylang language switching is respected, plus a wpml-config.xml for String Translation.
+- Gutenberg blocks: "Privacy Settings Button" and a live "Cookie Details Table" for policy pages; Elementor "Privacy Settings Button" widget.
+- Dashboard: 30-day consent trend chart (dependency-free SVG) and a table-size warning above 500k records.
+- Settings import/export as JSON (all values re-sanitized on import).
+- WP-CLI: `wp privacypress stats|scan|cleanup|export`.
+- Multisite: network activation provisions every site; new subsites are provisioned automatically.
+- Accessibility: polite live-region announcement when the banner appears.
 
 ### Fixed
 - Presence-based settings sanitization: saving one admin screen can no longer reset checkbox settings that live on a different screen.
