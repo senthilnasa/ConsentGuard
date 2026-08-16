@@ -23,7 +23,7 @@ services:
       retries: 20
 
   wordpress:
-    image: wordpress:6.8-php8.2-apache
+    image: wordpress:latest
     ports:
       - "9080:80"
     environment:
