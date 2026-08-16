@@ -2,10 +2,9 @@
 <ruleset name="Privacy Consent Manager">
     <description>WordPress coding standards for ConsentGuard.</description>
 
-    <file>.</file>
-    <exclude-pattern>vendor/*</exclude-pattern>
-    <exclude-pattern>node_modules/*</exclude-pattern>
-    <exclude-pattern>tests/*</exclude-pattern>
+    <!-- Only the shippable plugin folder is linted; tooling lives at the
+         repo root so the plugin directory itself stays distribution-clean. -->
+    <file>consentguard</file>
 
     <arg value="ps"/>
     <arg name="extensions" value="php"/>

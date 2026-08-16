@@ -82,8 +82,7 @@ and install via *Plugins → Add New → Upload Plugin*.
 ```bash
 git clone https://github.com/senthilnasa/ConsentGuard.git && cd ConsentGuard
 docker compose up -d          # WordPress + MariaDB on http://localhost:9080
-cd consentguard
-composer install && npm install
+composer install && npm install   # tooling lives at the repo root
 composer test                 # PHPUnit
 npm test                      # Jest
 composer lint                 # WordPress coding standards

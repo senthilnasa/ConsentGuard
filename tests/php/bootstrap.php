@@ -11,7 +11,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . '/fake-abspath/' );
-define( 'PCM_PLUGIN_DIR', dirname( __DIR__, 2 ) . '/' );
+define( 'PCM_PLUGIN_DIR', dirname( __DIR__, 2 ) . '/consentguard/' );
 define( 'PCM_PLUGIN_URL', 'https://example.test/wp-content/plugins/ConsentGuard/' );
 define( 'PCM_VERSION', '1.0.0-test' );
 define( 'MINUTE_IN_SECONDS', 60 );

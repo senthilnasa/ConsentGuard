@@ -13,7 +13,7 @@
     },
     "scripts": {
         "test": "jest",
-        "lint": "eslint public/js admin/js"
+        "lint": "eslint consentguard/public/js consentguard/admin/js"
     },
     "devDependencies": {
         "eslint": "^8.57.0",

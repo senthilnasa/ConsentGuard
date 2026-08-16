@@ -13,9 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.4', '8.0', '8.1', '8.2', '8.3']
-    defaults:
-      run:
-        working-directory: consentguard
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -23,7 +20,7 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
       - name: Syntax check
-        run: find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: find consentguard -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
       - name: PHPUnit
@@ -32,9 +29,6 @@ jobs:
   phpcs:
     name: WordPress coding standards
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: consentguard
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -47,9 +41,6 @@ jobs:
   js:
     name: JavaScript tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: consentguard
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

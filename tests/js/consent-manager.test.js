@@ -96,9 +96,9 @@ function boot( configOverrides, preSetup ) {
 	if ( typeof preSetup === 'function' ) {
 		preSetup(); // e.g. insert blocked embeds before the scripts boot.
 	}
-	require( '../../public/js/script-blocker.js' );
-	require( '../../public/js/analytics.js' );
-	require( '../../public/js/consent-manager.js' );
+	require( '../../consentguard/public/js/script-blocker.js' );
+	require( '../../consentguard/public/js/analytics.js' );
+	require( '../../consentguard/public/js/consent-manager.js' );
 }
 
 describe( 'PrivacyConsent state', () => {

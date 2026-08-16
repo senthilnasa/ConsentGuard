@@ -22,7 +22,7 @@ translations, tracker-detection rules and code.
 ## Workflow
 
 1. Fork and branch from `master`.
-2. `cd consentguard && composer install && npm install`
+2. `composer install && npm install` (from the repo root — tooling lives there; the plugin itself is `consentguard/`)
 3. Make your change, with tests:
    - PHP: `composer test` (PHPUnit, `tests/php`)
    - JS: `npm test` (Jest, `tests/js`)
