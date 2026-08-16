@@ -441,6 +441,42 @@ describe( 'floating revisit widget', () => {
 		expect( saved ).toEqual( { x: 100, y: 200 } );
 	} );
 
+	test( 'a plain click (with pointer jitter) opens the preferences modal', () => {
+		boot();
+		window.PrivacyConsent.acceptAll();
+		const widget = document.querySelector( '.pcm-reopen' );
+		const btn = widget.querySelector( 'button' );
+
+		// Real clicks often include tiny pointermove events — must stay a click.
+		widget.dispatchEvent( new window.MouseEvent( 'pointerdown', { clientX: 30, clientY: 700, bubbles: true } ) );
+		widget.dispatchEvent( new window.MouseEvent( 'pointermove', { clientX: 32, clientY: 701, bubbles: true } ) );
+		widget.dispatchEvent( new window.MouseEvent( 'pointerup', { bubbles: true } ) );
+		btn.click();
+
+		expect( document.querySelector( '.pcm-modal' ) ).not.toBeNull();
+		// Jitter below the threshold must not move or persist position.
+		expect( window.localStorage.getItem( 'pcmReopenPos' ) ).toBeNull();
+	} );
+
+	test( 'clicking still works after a completed drag', ( done ) => {
+		boot();
+		window.PrivacyConsent.acceptAll();
+		const widget = document.querySelector( '.pcm-reopen' );
+		const btn = widget.querySelector( 'button' );
+
+		// Drag...
+		widget.dispatchEvent( new window.MouseEvent( 'pointerdown', { clientX: 10, clientY: 10, bubbles: true } ) );
+		widget.dispatchEvent( new window.MouseEvent( 'pointermove', { clientX: 150, clientY: 150, bubbles: true } ) );
+		widget.dispatchEvent( new window.MouseEvent( 'pointerup', { bubbles: true } ) );
+
+		// ...the swallow guard clears on the next tick, then clicks work again.
+		setTimeout( () => {
+			btn.click();
+			expect( document.querySelector( '.pcm-modal' ) ).not.toBeNull();
+			done();
+		}, 10 );
+	} );
+
 	test( 'a saved position is restored on the next page view', () => {
 		window.localStorage.setItem( 'pcmReopenPos', JSON.stringify( { x: 60, y: 70 } ) );
 		boot();

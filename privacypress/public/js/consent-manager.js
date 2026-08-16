@@ -726,36 +726,47 @@
 	}
 
 	function makeDraggable( node ) {
+		var DRAG_THRESHOLD = 6; // px of travel before a press counts as a drag.
 		var dragging = false;
 		var moved = false;
+		var startX = 0;
+		var startY = 0;
 		var offsetX = 0;
 		var offsetY = 0;
 
 		node.addEventListener( 'pointerdown', function ( e ) {
 			dragging = true;
 			moved = false;
+			startX = e.clientX;
+			startY = e.clientY;
 			var rect = node.getBoundingClientRect();
 			offsetX = e.clientX - rect.left;
 			offsetY = e.clientY - rect.top;
-			if ( node.setPointerCapture && e.pointerId !== undefined ) {
-				try {
-					node.setPointerCapture( e.pointerId );
-				} catch ( err ) { /* older browsers */ }
-			}
+			// Deliberately NO setPointerCapture here: in Chrome "click" is a
+			// PointerEvent, so capturing on pointerdown would retarget the
+			// click to this wrapper and the button would never receive it.
+			// Capture starts only once the press becomes a real drag.
 		} );
 
 		node.addEventListener( 'pointermove', function ( e ) {
 			if ( ! dragging ) {
 				return;
 			}
-			var x = e.clientX - offsetX;
-			var y = e.clientY - offsetY;
-			if ( ! moved && Math.abs( e.movementX || 1 ) + Math.abs( e.movementY || 1 ) < 2 ) {
+			// A press only becomes a drag after real travel; jittery clicks
+			// (a few sub-threshold pointermoves) must stay clicks.
+			var dx = e.clientX - startX;
+			var dy = e.clientY - startY;
+			if ( ! moved && ( dx * dx + dy * dy ) < DRAG_THRESHOLD * DRAG_THRESHOLD ) {
 				return;
+			}
+			if ( ! moved && node.setPointerCapture && e.pointerId !== undefined ) {
+				try {
+					node.setPointerCapture( e.pointerId );
+				} catch ( err ) { /* older browsers */ }
 			}
 			moved = true;
 			node.classList.add( 'pcm-dragging' );
-			applyReopenPosition( node, { x: x, y: y } );
+			applyReopenPosition( node, { x: e.clientX - offsetX, y: e.clientY - offsetY } );
 		} );
 
 		node.addEventListener( 'pointerup', function () {
@@ -771,14 +782,21 @@
 						y: parseInt( node.style.top, 10 ) || 8
 					} ) );
 				} catch ( e ) { /* ignore */ }
-				// Swallow the click that follows a drag.
+				// Swallow only the click that concludes a real drag.
 				var swallow = function ( ev ) {
 					ev.stopPropagation();
 					ev.preventDefault();
-					node.removeEventListener( 'click', swallow, true );
 				};
 				node.addEventListener( 'click', swallow, true );
+				window.setTimeout( function () {
+					node.removeEventListener( 'click', swallow, true );
+				}, 0 );
 			}
+		} );
+
+		node.addEventListener( 'pointercancel', function () {
+			dragging = false;
+			node.classList.remove( 'pcm-dragging' );
 		} );
 	}
 

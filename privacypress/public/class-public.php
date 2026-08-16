@@ -73,6 +73,23 @@ class Frontend {
 	}
 
 	/**
+	 * Asset cache-buster: file mtime under WP_DEBUG so development changes
+	 * bypass browser/page caches; the plugin version in production.
+	 *
+	 * @param string $relative Plugin-relative asset path.
+	 * @return string
+	 */
+	private function asset_version( $relative ) {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			$mtime = @filemtime( PCM_PLUGIN_DIR . $relative ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			if ( $mtime ) {
+				return (string) $mtime;
+			}
+		}
+		return PCM_VERSION;
+	}
+
+	/**
 	 * Enqueues styles and scripts.
 	 */
 	public function enqueue_assets() {
@@ -84,7 +101,7 @@ class Frontend {
 			'pcm-banner',
 			PCM_PLUGIN_URL . 'public/css/consent-banner.css',
 			array(),
-			PCM_VERSION
+			$this->asset_version( 'public/css/consent-banner.css' )
 		);
 		wp_add_inline_style( 'pcm-banner', $this->banner_css_vars() );
 
@@ -92,14 +109,14 @@ class Frontend {
 
 		// debug.js is NOT a dependency: modules guard on window.PCMDebug so
 		// production pages never pay for the logger.
-		wp_register_script( 'pcm-debug', PCM_PLUGIN_URL . 'public/js/debug.js', array(), PCM_VERSION, false );
-		wp_register_script( 'pcm-blocker', PCM_PLUGIN_URL . 'public/js/script-blocker.js', $debug_deps = $debug ? array( 'pcm-debug' ) : array(), PCM_VERSION, false );
-		wp_register_script( 'pcm-analytics', PCM_PLUGIN_URL . 'public/js/analytics.js', $debug_deps, PCM_VERSION, false );
+		wp_register_script( 'pcm-debug', PCM_PLUGIN_URL . 'public/js/debug.js', array(), $this->asset_version( 'public/js/debug.js' ), false );
+		wp_register_script( 'pcm-blocker', PCM_PLUGIN_URL . 'public/js/script-blocker.js', $debug_deps = $debug ? array( 'pcm-debug' ) : array(), $this->asset_version( 'public/js/script-blocker.js' ), false );
+		wp_register_script( 'pcm-analytics', PCM_PLUGIN_URL . 'public/js/analytics.js', $debug_deps, $this->asset_version( 'public/js/analytics.js' ), false );
 		wp_register_script(
 			'pcm-consent',
 			PCM_PLUGIN_URL . 'public/js/consent-manager.js',
 			array_merge( $debug_deps, array( 'pcm-blocker', 'pcm-analytics' ) ),
-			PCM_VERSION,
+			$this->asset_version( 'public/js/consent-manager.js' ),
 			false // Head, not footer: the UI + unblocker must be ready early.
 		);
 
