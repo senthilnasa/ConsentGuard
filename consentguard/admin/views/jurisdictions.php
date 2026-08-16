@@ -49,7 +49,7 @@ Admin::maybe_notice();
 	</thead>
 	<tbody>
 	<?php
-	$pcm_rules   = $pcm_j['rules'];
+	$pcm_rules     = $pcm_j['rules'];
 	$pcm_rules[''] = ''; // Blank row for adding.
 	foreach ( $pcm_rules as $pcm_country => $pcm_profile_key ) :
 		?>

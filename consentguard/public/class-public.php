@@ -120,11 +120,11 @@ class Frontend {
 			false // Head, not footer: the UI + unblocker must be ready early.
 		);
 
-		$config                  = $this->consent->get_client_config();
-		$config['consentMode']   = ( new Google_Consent_Mode() )->client_config();
-		$config['profile']       = $this->resolve_profile_config();
-		$config['debug']         = $debug;
-		$config['shouldRender']  = pcm_should_render_banner();
+		$config                 = $this->consent->get_client_config();
+		$config['consentMode']  = ( new Google_Consent_Mode() )->client_config();
+		$config['profile']      = $this->resolve_profile_config();
+		$config['debug']        = $debug;
+		$config['shouldRender'] = pcm_should_render_banner();
 
 		wp_add_inline_script( 'pcm-consent', 'window.PCMConfig = ' . wp_json_encode( $config ) . ';', 'before' );
 

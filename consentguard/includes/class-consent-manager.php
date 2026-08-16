@@ -245,7 +245,16 @@ class Consent_Manager {
 		if ( ! empty( $overrides['categories'] ) && is_array( $overrides['categories'] ) ) {
 			foreach ( $overrides['categories'] as $slug => $texts ) {
 				if ( isset( $categories[ $slug ] ) ) {
-					$categories[ $slug ] = array_merge( $categories[ $slug ], array_intersect_key( (array) $texts, array( 'label' => 1, 'description' => 1 ) ) );
+					$categories[ $slug ] = array_merge(
+						$categories[ $slug ],
+						array_intersect_key(
+							(array) $texts,
+							array(
+								'label'       => 1,
+								'description' => 1,
+							)
+						)
+					);
 				}
 			}
 		}
@@ -288,27 +297,27 @@ class Consent_Manager {
 		}
 
 		return array(
-			'cookieName'     => self::COOKIE,
-			'cookieExpiry'   => (int) pcm_get_setting( 'consent.cookie_expiry', 180 ),
-			'consentVersion' => (string) pcm_get_setting( 'consent.consent_version', '1.0' ),
-			'policyVersion'  => (string) ( $policies['policy_version'] ?? '1.0' ),
+			'cookieName'       => self::COOKIE,
+			'cookieExpiry'     => (int) pcm_get_setting( 'consent.cookie_expiry', 180 ),
+			'consentVersion'   => (string) pcm_get_setting( 'consent.consent_version', '1.0' ),
+			'policyVersion'    => (string) ( $policies['policy_version'] ?? '1.0' ),
 			'repromptOnChange' => (bool) pcm_get_setting( 'consent.reprompt_on_change', true ),
-			'categories'     => $categories,
-			'cookies'        => $cookies,
-			'services'       => $services,
-			'banner'         => $banner,
-			'privacyUrl'     => ! empty( $policies['privacy_page_id'] ) ? get_permalink( (int) $policies['privacy_page_id'] ) : '',
-			'cookieUrl'      => ! empty( $policies['cookie_page_id'] ) ? get_permalink( (int) $policies['cookie_page_id'] ) : '',
-			'restUrl'        => esc_url_raw( rest_url( 'pcm/v1/consent' ) ),
-			'storeRecords'   => (bool) pcm_get_setting( 'consent.store_records', true ),
-			'respectGpc'     => (bool) pcm_get_setting( 'advanced.respect_gpc', true ),
-			'debug'          => (bool) pcm_get_setting( 'advanced.debug', false ),
-			'discover'       => $can_discover,
-			'discoverUrl'    => $can_discover ? esc_url_raw( rest_url( 'pcm/v1/discovered' ) ) : '',
-			'restNonce'      => $can_discover ? wp_create_nonce( 'wp_rest' ) : '',
-			'knownCookies'   => array_values( array_unique( $known ) ),
-			'language'       => get_locale(),
-			'i18n'           => array(
+			'categories'       => $categories,
+			'cookies'          => $cookies,
+			'services'         => $services,
+			'banner'           => $banner,
+			'privacyUrl'       => ! empty( $policies['privacy_page_id'] ) ? get_permalink( (int) $policies['privacy_page_id'] ) : '',
+			'cookieUrl'        => ! empty( $policies['cookie_page_id'] ) ? get_permalink( (int) $policies['cookie_page_id'] ) : '',
+			'restUrl'          => esc_url_raw( rest_url( 'pcm/v1/consent' ) ),
+			'storeRecords'     => (bool) pcm_get_setting( 'consent.store_records', true ),
+			'respectGpc'       => (bool) pcm_get_setting( 'advanced.respect_gpc', true ),
+			'debug'            => (bool) pcm_get_setting( 'advanced.debug', false ),
+			'discover'         => $can_discover,
+			'discoverUrl'      => $can_discover ? esc_url_raw( rest_url( 'pcm/v1/discovered' ) ) : '',
+			'restNonce'        => $can_discover ? wp_create_nonce( 'wp_rest' ) : '',
+			'knownCookies'     => array_values( array_unique( $known ) ),
+			'language'         => get_locale(),
+			'i18n'             => array(
 				'preferencesTitle' => __( 'Customise Consent Preferences', 'consentguard' ),
 				'alwaysActive'     => __( 'Always Active', 'consentguard' ),
 				'privacyPolicy'    => __( 'Privacy Policy', 'consentguard' ),

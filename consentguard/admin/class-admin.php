@@ -192,6 +192,7 @@ class Admin {
 	 * Handles all settings form submissions.
 	 */
 	public function handle_save() {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer() inside Security::verify_admin_action() directly below; the sniff cannot trace through the helper.
 		if ( ! isset( $_POST['pcm_action'] ) || 'save_settings' !== $_POST['pcm_action'] ) {
 			return;
 		}
@@ -325,7 +326,7 @@ class Admin {
 
 		// New custom category from the categories screen.
 		if ( ! empty( $_POST['pcm_new_category_slug'] ) && isset( $raw['categories'] ) ) {
-			$new_slug = pcm_sanitize_category_slug( wp_unslash( $_POST['pcm_new_category_slug'] ) );
+			$new_slug = pcm_sanitize_category_slug( sanitize_text_field( wp_unslash( $_POST['pcm_new_category_slug'] ) ) );
 			if ( '' !== $new_slug && ! isset( $raw['categories'][ $new_slug ] ) ) {
 				$raw['categories'][ $new_slug ] = array(
 					'label'       => isset( $_POST['pcm_new_category_label'] ) ? sanitize_text_field( wp_unslash( $_POST['pcm_new_category_label'] ) ) : $new_slug,
@@ -352,6 +353,7 @@ class Admin {
 
 		wp_safe_redirect( add_query_arg( 'pcm-saved', '1', wp_get_referer() ?: admin_url( 'admin.php?page=pcm-dashboard' ) ) );
 		exit;
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
 	/**
@@ -360,8 +362,10 @@ class Admin {
 	public function handle_conflict_action() {
 		Security::verify_admin_action( 'pcm_conflict' );
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- verified by check_admin_referer() inside Security::verify_admin_action() above.
 		$id = isset( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
 		$op = isset( $_GET['op'] ) ? sanitize_key( wp_unslash( $_GET['op'] ) ) : '';
+		// phpcs:enable
 
 		$notice = 'done';
 		switch ( $op ) {
@@ -432,7 +436,8 @@ class Admin {
 
 		$page = 1;
 		do {
-			$batch = $this->storage->get_records( $page, 100 );
+			$batch       = $this->storage->get_records( $page, 100 );
+			$batch_count = count( $batch['items'] );
 			foreach ( $batch['items'] as $row ) {
 				$line = array();
 				foreach ( $columns as $column ) {
@@ -440,8 +445,8 @@ class Admin {
 				}
 				fputcsv( $out, $line );
 			}
-			$page++;
-		} while ( count( $batch['items'] ) === 100 );
+			++$page;
+		} while ( 100 === $batch_count );
 
 		fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 		exit;
@@ -453,6 +458,7 @@ class Admin {
 	public function handle_export_proof() {
 		Security::verify_admin_action( 'pcm_export_proof' );
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- verified by check_admin_referer() inside Security::verify_admin_action() above.
 		$uuid   = isset( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
 		$record = wp_is_uuid( $uuid ) ? $this->storage->find_by_uuid( $uuid ) : null;
 		if ( ! $record ) {
@@ -655,7 +661,7 @@ class Admin {
 	public function handle_import_settings() {
 		Security::verify_admin_action( 'pcm_import_settings' );
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized field-by-field below.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce verified by check_admin_referer() inside Security::verify_admin_action() above; JSON decoded and sanitized field-by-field below.
 		$json    = isset( $_POST['pcm_import_json'] ) ? trim( wp_unslash( $_POST['pcm_import_json'] ) ) : '';
 		$decoded = json_decode( $json, true );
 
@@ -680,6 +686,7 @@ class Admin {
 	public function handle_delete_record() {
 		Security::verify_admin_action( 'pcm_delete_record' );
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer() inside Security::verify_admin_action() above.
 		$uuid    = isset( $_POST['pcm_record_uuid'] ) ? sanitize_text_field( wp_unslash( $_POST['pcm_record_uuid'] ) ) : '';
 		$deleted = wp_is_uuid( $uuid ) ? $this->storage->delete_by_uuid( $uuid ) : 0;
 

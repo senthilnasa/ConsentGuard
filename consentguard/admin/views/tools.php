@@ -81,6 +81,6 @@ PrivacyConsent.onChange(function (consent) { /* ... */ });
 PrivacyConsent.openPreferences();
 
 document.addEventListener('privacy_consent_changed', function (e) {
-    console.log(e.detail);
+	console.log(e.detail);
 });</pre>
 <p class="description"><?php esc_html_e( 'See the developer documentation for all hooks, filters and events.', 'consentguard' ); ?></p>

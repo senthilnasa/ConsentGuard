@@ -28,17 +28,17 @@ class Plugin_Detector {
 	 */
 	public function known_plugins() {
 		$known = array(
-			'google-site-kit/google-site-kit.php'                => array(
+			'google-site-kit/google-site-kit.php'         => array(
 				'name'     => 'Site Kit by Google',
 				'services' => array( 'ga4', 'gtm' ),
 				'slug'     => 'site-kit',
 			),
-			'microsoft-clarity/clarity.php'                      => array(
+			'microsoft-clarity/clarity.php'               => array(
 				'name'     => 'Microsoft Clarity',
 				'services' => array( 'clarity' ),
 				'slug'     => 'microsoft-clarity',
 			),
-			'cloudflare/cloudflare.php'                          => array(
+			'cloudflare/cloudflare.php'                   => array(
 				'name'     => 'Cloudflare',
 				'services' => array( 'cloudflare' ),
 				'slug'     => 'cloudflare',
@@ -48,12 +48,12 @@ class Plugin_Detector {
 				'services' => array( 'ga4' ),
 				'slug'     => 'monsterinsights',
 			),
-			'ga-google-analytics/ga-google-analytics.php'        => array(
+			'ga-google-analytics/ga-google-analytics.php' => array(
 				'name'     => 'GA Google Analytics',
 				'services' => array( 'ga4' ),
 				'slug'     => 'ga-google-analytics',
 			),
-			'googleanalytics/googleanalytics.php'                => array(
+			'googleanalytics/googleanalytics.php'         => array(
 				'name'     => 'Google Analytics for WordPress by ShareThis',
 				'services' => array( 'ga4' ),
 				'slug'     => 'sharethis-ga',
@@ -63,7 +63,7 @@ class Plugin_Detector {
 				'services' => array( 'gtm' ),
 				'slug'     => 'gtm4wp',
 			),
-			'metronet-tag-manager/metronet-tag-manager.php'      => array(
+			'metronet-tag-manager/metronet-tag-manager.php' => array(
 				'name'     => 'Metronet Tag Manager',
 				'services' => array( 'gtm' ),
 				'slug'     => 'metronet-gtm',
@@ -73,17 +73,17 @@ class Plugin_Detector {
 				'services' => array( 'meta_pixel' ),
 				'slug'     => 'meta-pixel',
 			),
-			'pixelyoursite/facebook-pixel-master.php'            => array(
+			'pixelyoursite/facebook-pixel-master.php'     => array(
 				'name'     => 'PixelYourSite',
 				'services' => array( 'meta_pixel', 'ga4' ),
 				'slug'     => 'pixelyoursite',
 			),
-			'wp-analytify/wp-analytify.php'                      => array(
+			'wp-analytify/wp-analytify.php'               => array(
 				'name'     => 'Analytify',
 				'services' => array( 'ga4' ),
 				'slug'     => 'analytify',
 			),
-			'host-analyticsjs-local/host-analyticsjs-local.php'  => array(
+			'host-analyticsjs-local/host-analyticsjs-local.php' => array(
 				'name'     => 'CAOS (Host Analytics Locally)',
 				'services' => array( 'ga4' ),
 				'slug'     => 'caos',
@@ -126,7 +126,7 @@ class Plugin_Detector {
 	 * @return bool
 	 */
 	public function site_kit_analytics_active() {
-		if ( ! defined( 'GOOGLESITEKIT_VERSION' ) && ! is_plugin_active_safe( 'google-site-kit/google-site-kit.php' ) ) {
+		if ( ! defined( 'GOOGLESITEKIT_VERSION' ) && ! pcm_is_plugin_active_safe( 'google-site-kit/google-site-kit.php' ) ) {
 			return false;
 		}
 		$modules = get_option( 'googlesitekit_active_modules', array() );
@@ -134,25 +134,5 @@ class Plugin_Detector {
 			return false;
 		}
 		return in_array( 'analytics-4', $modules, true ) || in_array( 'analytics', $modules, true );
-	}
-}
-
-if ( ! function_exists( 'PCM\is_plugin_active_safe' ) ) {
-	/**
-	 * is_plugin_active() that works on the frontend too.
-	 *
-	 * @param string $basename Plugin basename.
-	 * @return bool
-	 */
-	function is_plugin_active_safe( $basename ) {
-		$active = (array) get_option( 'active_plugins', array() );
-		if ( in_array( $basename, $active, true ) ) {
-			return true;
-		}
-		if ( is_multisite() ) {
-			$network = (array) get_site_option( 'active_sitewide_plugins', array() );
-			return isset( $network[ $basename ] );
-		}
-		return false;
 	}
 }

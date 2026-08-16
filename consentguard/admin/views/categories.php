@@ -59,11 +59,13 @@ Admin::maybe_notice();
 <?php $pcm_inventory = $settings['cookies'] ?? array(); ?>
 <?php foreach ( $pcm_categories as $pcm_slug => $pcm_cat ) : ?>
 	<h3><?php echo esc_html( $pcm_cat['label'] ); ?> <code><?php echo esc_html( $pcm_slug ); ?></code></h3>
-	<textarea class="large-text code" rows="4" name="pcm_cookie_inventory[<?php echo esc_attr( $pcm_slug ); ?>]" placeholder="_ga | 1 year | Google Analytics visitor cookie"><?php
+	<textarea class="large-text code" rows="4" name="pcm_cookie_inventory[<?php echo esc_attr( $pcm_slug ); ?>]" placeholder="_ga | 1 year | Google Analytics visitor cookie">
+	<?php
 	foreach ( (array) ( $pcm_inventory[ $pcm_slug ] ?? array() ) as $pcm_cookie ) {
 		echo esc_textarea( $pcm_cookie['name'] . ' | ' . $pcm_cookie['duration'] . ' | ' . $pcm_cookie['description'] . "\n" );
 	}
-	?></textarea>
+	?>
+	</textarea>
 <?php endforeach; ?>
 
 <?php Admin::form_close(); ?>

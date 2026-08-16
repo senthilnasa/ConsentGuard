@@ -31,11 +31,11 @@ class Script_Blocker {
 	 * @var array<string,string>
 	 */
 	private $inline_signatures = array(
-		'www.googletagmanager.com/gtag/js'  => 'analytics',
-		'www.googletagmanager.com/gtm.js'   => 'analytics',
-		'www.clarity.ms/tag/'               => 'analytics',
-		'connect.facebook.net'              => 'marketing',
-		'static.cloudflareinsights.com'     => 'analytics',
+		'www.googletagmanager.com/gtag/js' => 'analytics',
+		'www.googletagmanager.com/gtm.js'  => 'analytics',
+		'www.clarity.ms/tag/'              => 'analytics',
+		'connect.facebook.net'             => 'marketing',
+		'static.cloudflareinsights.com'    => 'analytics',
 	);
 
 	/**
@@ -114,11 +114,11 @@ class Script_Blocker {
 	/**
 	 * Decides per <script> tag whether to neutralize it.
 	 *
-	 * @param array $match [full tag, attributes, body].
+	 * @param array $tag_match [full tag, attributes, body].
 	 * @return string
 	 */
-	public function maybe_block_tag( $match ) {
-		list( $tag, $attrs, $body ) = $match;
+	public function maybe_block_tag( $tag_match ) {
+		list( $tag, $attrs, $body ) = $tag_match;
 
 		// Already managed by us, or already inert.
 		if ( false !== stripos( $attrs, 'data-pcm-' ) || preg_match( '/type\s*=\s*["\']?text\/plain/i', $attrs ) ) {
@@ -170,11 +170,11 @@ class Script_Blocker {
 	 * matching category is granted. The src moves to data-pcm-src; the
 	 * frontend renders a consent placeholder card in its place.
 	 *
-	 * @param array $match [full opening tag, attributes].
+	 * @param array $tag_match [full opening tag, attributes].
 	 * @return string
 	 */
-	public function maybe_block_iframe( $match ) {
-		list( $tag, $attrs ) = $match;
+	public function maybe_block_iframe( $tag_match ) {
+		list( $tag, $attrs ) = $tag_match;
 
 		if ( false !== stripos( $attrs, 'data-pcm-' ) ) {
 			return $tag;

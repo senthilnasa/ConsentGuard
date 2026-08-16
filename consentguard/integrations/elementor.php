@@ -1,9 +1,10 @@
 <?php
 /**
- * Elementor widget: Privacy Settings button.
+ * Elementor integration loader.
  *
- * Registered only when Elementor is active. Renders the same markup as
- * the [pcm_privacy_settings] shortcode / Gutenberg block.
+ * Registers the "Privacy Settings Button" widget when Elementor is active.
+ * The widget class lives in its own file because it extends
+ * \Elementor\Widget_Base, which only exists once Elementor has loaded.
  *
  * @package PCM
  */
@@ -16,55 +17,7 @@ add_action(
 		if ( ! class_exists( '\Elementor\Widget_Base' ) ) {
 			return;
 		}
-
-		// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound -- conditional class, Elementor-only.
-		final class PCM_Elementor_Privacy_Settings extends \Elementor\Widget_Base {
-
-			public function get_name() {
-				return 'pcm-privacy-settings';
-			}
-
-			public function get_title() {
-				return __( 'Privacy Settings Button', 'consentguard' );
-			}
-
-			public function get_icon() {
-				return 'eicon-lock-user';
-			}
-
-			public function get_categories() {
-				return array( 'general' );
-			}
-
-			protected function register_controls() {
-				$this->start_controls_section(
-					'pcm_section',
-					array( 'label' => __( 'Privacy Settings', 'consentguard' ) )
-				);
-				$this->add_control(
-					'label',
-					array(
-						'label'       => __( 'Button label', 'consentguard' ),
-						'type'        => \Elementor\Controls_Manager::TEXT,
-						'default'     => '',
-						'placeholder' => pcm_get_setting( 'banner.reopen_label', __( 'Privacy Settings', 'consentguard' ) ),
-					)
-				);
-				$this->end_controls_section();
-			}
-
-			protected function render() {
-				$settings = $this->get_settings_for_display();
-				$label    = ! empty( $settings['label'] )
-					? sanitize_text_field( $settings['label'] )
-					: pcm_get_setting( 'banner.reopen_label', __( 'Privacy Settings', 'consentguard' ) );
-				printf(
-					'<button type="button" class="pcm-open-preferences pcm-inline-open">%s</button>',
-					esc_html( $label )
-				);
-			}
-		}
-
+		require_once __DIR__ . '/class-pcm-elementor-privacy-settings.php';
 		$widgets_manager->register( new PCM_Elementor_Privacy_Settings() );
 	}
 );

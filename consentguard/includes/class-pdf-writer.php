@@ -305,7 +305,7 @@ class Pdf_Writer {
 			$this->escape( $this->to_pdf_text( $this->doc_title ) ),
 			gmdate( 'YmdHis' ) . 'Z'
 		);
-		$info_id = count( $objects );
+		$info_id   = count( $objects );
 
 		// Assemble with a cross-reference table.
 		$pdf     = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
@@ -403,7 +403,7 @@ class Pdf_Writer {
 	 */
 	private function to_pdf_text( $text ) {
 		$converted = function_exists( 'iconv' )
-			? @iconv( 'UTF-8', 'CP1252//TRANSLIT//IGNORE', (string) $text )
+			? @iconv( 'UTF-8', 'CP1252//TRANSLIT//IGNORE', (string) $text ) // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- iconv notices on untranslatable bytes are expected; the fallback below handles failure.
 			: false;
 		if ( false === $converted ) {
 			$converted = preg_replace( '/[^\x20-\x7E]/', '?', (string) $text );
@@ -418,12 +418,15 @@ class Pdf_Writer {
 	 * @return string
 	 */
 	private function escape( $text ) {
-		return strtr( (string) $text, array(
-			'\\' => '\\\\',
-			'('  => '\\(',
-			')'  => '\\)',
-			"\r" => ' ',
-			"\n" => ' ',
-		) );
+		return strtr(
+			(string) $text,
+			array(
+				'\\' => '\\\\',
+				'('  => '\\(',
+				')'  => '\\)',
+				"\r" => ' ',
+				"\n" => ' ',
+			)
+		);
 	}
 }

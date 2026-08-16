@@ -26,7 +26,7 @@ Admin::maybe_notice();
 					'id'                => 'pcm-privacy-page',
 					'name'              => 'pcm[policies][privacy_page_id]',
 					'selected'          => (int) $settings['policies']['privacy_page_id'],
-					'show_option_none'  => __( '— Select —', 'consentguard' ),
+					'show_option_none'  => esc_html__( '— Select —', 'consentguard' ),
 					'option_none_value' => '0',
 				)
 			);
@@ -42,7 +42,7 @@ Admin::maybe_notice();
 					'id'                => 'pcm-cookie-page',
 					'name'              => 'pcm[policies][cookie_page_id]',
 					'selected'          => (int) $settings['policies']['cookie_page_id'],
-					'show_option_none'  => __( '— Select —', 'consentguard' ),
+					'show_option_none'  => esc_html__( '— Select —', 'consentguard' ),
 					'option_none_value' => '0',
 				)
 			);

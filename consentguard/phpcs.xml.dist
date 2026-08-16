@@ -14,12 +14,19 @@
     <rule ref="WordPress">
         <!-- Short array syntax and short ternaries are fine for this project. -->
         <exclude name="Universal.Operators.DisallowShortTernary"/>
+        <!-- The plugin's core purpose is emitting consent-blocked script
+             templates (type="text/plain"); wp_enqueue_script cannot express
+             those. Regular assets ARE enqueued (see Frontend). -->
+        <exclude name="WordPress.WP.EnqueuedResources.NonEnqueuedScript"/>
+        <!-- pcm/PCM is this plugin's established, released prefix (namespace
+             PCM\, pcm_* functions/hooks/options, wp_pcm_consents table). -->
+        <exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
     </rule>
 
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="ConsentGuard"/>
+                <element value="consentguard"/>
             </property>
         </properties>
     </rule>
@@ -31,6 +38,13 @@
                 <element value="PCM"/>
             </property>
         </properties>
+    </rule>
+
+    <rule ref="WordPress.Files.FileName">
+        <!-- public/class-public.php intentionally hosts PCM\Frontend:
+             "public" is a PHP reserved word, the spec'd file layout keeps
+             the frontend class in public/. The autoloader maps it. -->
+        <exclude-pattern>public/class-public\.php</exclude-pattern>
     </rule>
 
     <rule ref="PHPCompatibilityWP"/>

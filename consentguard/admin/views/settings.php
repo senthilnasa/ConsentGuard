@@ -59,22 +59,26 @@ Admin::maybe_notice();
 	<tr>
 		<th scope="row"><label for="pcm-blocked-domains"><?php esc_html_e( 'Blocked domains', 'consentguard' ); ?></label></th>
 		<td>
-			<textarea id="pcm-blocked-domains" class="large-text code" rows="8" name="pcm_blocker_domains"><?php
+			<textarea id="pcm-blocked-domains" class="large-text code" rows="8" name="pcm_blocker_domains">
+			<?php
 			foreach ( $settings['blocker']['domains'] as $pcm_domain => $pcm_category ) {
 				echo esc_textarea( $pcm_domain . ' ' . $pcm_category . "\n" );
 			}
-			?></textarea>
+			?>
+			</textarea>
 			<p class="description"><?php esc_html_e( 'One per line: domain followed by its consent category, e.g. "clarity.ms analytics". Subdomains match automatically.', 'consentguard' ); ?></p>
 		</td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="pcm-iframe-domains"><?php esc_html_e( 'Blocked embed/iframe domains', 'consentguard' ); ?></label></th>
 		<td>
-			<textarea id="pcm-iframe-domains" class="large-text code" rows="6" name="pcm_blocker_iframe_domains"><?php
+			<textarea id="pcm-iframe-domains" class="large-text code" rows="6" name="pcm_blocker_iframe_domains">
+			<?php
 			foreach ( (array) ( $settings['blocker']['iframe_domains'] ?? array() ) as $pcm_domain => $pcm_category ) {
 				echo esc_textarea( $pcm_domain . ' ' . $pcm_category . "\n" );
 			}
-			?></textarea>
+			?>
+			</textarea>
 			<p class="description"><?php esc_html_e( 'Embeds (YouTube, Vimeo, Spotify, Facebook, …) are replaced with an "Accept & load" placeholder until the visitor grants the category. One per line: domain followed by category. Hosts like www.google.com are not listed by default because that would also block reCAPTCHA.', 'consentguard' ); ?></p>
 		</td>
 	</tr>
@@ -92,10 +96,12 @@ Admin::maybe_notice();
 	<tr>
 		<th scope="row"><label for="pcm-translations"><?php esc_html_e( 'Per-locale text overrides (JSON)', 'consentguard' ); ?></label></th>
 		<td>
-			<textarea id="pcm-translations" class="large-text code" rows="8" name="pcm_translations_json" placeholder='{"ta_IN": {"banner": {"title": "...", "message": "..."}, "categories": {"analytics": {"label": "...", "description": "..."}}}}'><?php
+			<textarea id="pcm-translations" class="large-text code" rows="8" name="pcm_translations_json" placeholder='{"ta_IN": {"banner": {"title": "...", "message": "..."}, "categories": {"analytics": {"label": "...", "description": "..."}}}}'>
+			<?php
 			$pcm_translations = (array) ( $settings['translations'] ?? array() );
 			echo esc_textarea( $pcm_translations ? wp_json_encode( $pcm_translations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) : '' );
-			?></textarea>
+			?>
+			</textarea>
 			<p class="description"><?php esc_html_e( 'Overrides the banner/modal texts and category labels for specific locales (e.g. ta_IN, hi_IN). Applied per request, so WPML/Polylang language switching is respected. Built-in plugin strings translate via standard .po files; WPML/Polylang users can alternatively use String Translation (a wpml-config.xml ships with the plugin).', 'consentguard' ); ?></p>
 		</td>
 	</tr>

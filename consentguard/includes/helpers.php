@@ -19,12 +19,31 @@ function pcm_get_settings() {
 /**
  * Returns a single setting using dot notation, e.g. 'ga4.measurement_id'.
  *
- * @param string $key     Dot-notation key.
- * @param mixed  $default Fallback value.
+ * @param string $key      Dot-notation key.
+ * @param mixed  $fallback Fallback value.
  * @return mixed
  */
-function pcm_get_setting( $key, $default = null ) {
-	return PCM\Settings::instance()->get( $key, $default );
+function pcm_get_setting( $key, $fallback = null ) {
+	return PCM\Settings::instance()->get( $key, $fallback );
+}
+
+/**
+ * Plugin activation check that also works on the frontend, where
+ * is_plugin_active() is not loaded.
+ *
+ * @param string $basename Plugin basename.
+ * @return bool
+ */
+function pcm_is_plugin_active_safe( $basename ) {
+	$active = (array) get_option( 'active_plugins', array() );
+	if ( in_array( $basename, $active, true ) ) {
+		return true;
+	}
+	if ( is_multisite() ) {
+		$network = (array) get_site_option( 'active_sitewide_plugins', array() );
+		return isset( $network[ $basename ] );
+	}
+	return false;
 }
 
 /**

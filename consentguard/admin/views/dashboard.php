@@ -13,11 +13,11 @@ defined( 'ABSPATH' ) || exit;
 
 use PCM\Admin\Admin;
 
-$pcm_stats     = $storage->get_stats();
-$pcm_open      = $conflicts->get_open_conflicts();
-$pcm_dupes     = $scanner->duplicate_count();
-$pcm_statuses  = pcm()->module( 'analytics' ) ? pcm()->module( 'analytics' )->statuses() : array();
-$pcm_total     = max( 1, $pcm_stats['total'] );
+$pcm_stats    = $storage->get_stats();
+$pcm_open     = $conflicts->get_open_conflicts();
+$pcm_dupes    = $scanner->duplicate_count();
+$pcm_statuses = pcm()->module( 'analytics' ) ? pcm()->module( 'analytics' )->statuses() : array();
+$pcm_total    = max( 1, $pcm_stats['total'] );
 
 Admin::maybe_notice();
 
@@ -37,7 +37,14 @@ $pcm_max   = 1;
 foreach ( $pcm_daily as $pcm_day ) {
 	$pcm_max = max( $pcm_max, $pcm_day['accept'] + $pcm_day['reject'] + $pcm_day['custom'] );
 }
-$pcm_has_data = array_sum( array_map( static function ( $d ) { return $d['accept'] + $d['reject'] + $d['custom']; }, $pcm_daily ) ) > 0;
+$pcm_has_data = array_sum(
+	array_map(
+		static function ( $d ) {
+			return $d['accept'] + $d['reject'] + $d['custom'];
+		},
+		$pcm_daily
+	)
+) > 0;
 if ( $pcm_has_data ) :
 	$pcm_w = 24;
 	$pcm_h = 120;
@@ -98,7 +105,10 @@ if ( $pcm_has_data ) :
 				'cloudflare' => __( 'Cloudflare Analytics', 'consentguard' ),
 			);
 			foreach ( $pcm_labels as $pcm_key => $pcm_label ) :
-				$pcm_status = isset( $pcm_statuses[ $pcm_key ] ) ? $pcm_statuses[ $pcm_key ] : array( 'configured' => false, 'enabled' => false );
+				$pcm_status = isset( $pcm_statuses[ $pcm_key ] ) ? $pcm_statuses[ $pcm_key ] : array(
+					'configured' => false,
+					'enabled'    => false,
+				);
 				?>
 				<tr>
 					<td><?php echo esc_html( $pcm_label ); ?></td>

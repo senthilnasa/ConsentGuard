@@ -149,7 +149,7 @@ class Duplicate_Tracking_Detector {
 		$count = 0;
 		foreach ( (array) ( $scan['results'] ?? array() ) as $result ) {
 			if ( ! empty( $result['duplicate'] ) ) {
-				$count++;
+				++$count;
 			}
 		}
 		return $count;
@@ -166,9 +166,9 @@ class Duplicate_Tracking_Detector {
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout'   => 15,
-				'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
-				'headers'   => array( 'Cache-Control' => 'no-cache' ),
+				'timeout'    => 15,
+				'sslverify'  => apply_filters( 'https_local_ssl_verify', false ),
+				'headers'    => array( 'Cache-Control' => 'no-cache' ),
 				// Identify ourselves; some caches vary on UA.
 				'user-agent' => 'PCM-Scanner/' . PCM_VERSION . '; ' . home_url(),
 			)
@@ -293,7 +293,7 @@ class Duplicate_Tracking_Detector {
 			$category = 'unknown';
 			$known    = false;
 			foreach ( $domains as $domain => $cat ) {
-				if ( $host === strtolower( $domain ) || str_ends_with( $host, '.' . ltrim( strtolower( $domain ), '*.' ) ) ) {
+				if ( strtolower( $domain ) === $host || str_ends_with( $host, '.' . ltrim( strtolower( $domain ), '*.' ) ) ) {
 					$category = $cat;
 					$known    = true;
 					break;

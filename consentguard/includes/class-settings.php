@@ -51,16 +51,16 @@ class Settings {
 	 */
 	public static function defaults() {
 		return array(
-			'consent'       => array(
-				'banner_enabled'    => true,
-				'cookie_expiry'     => 180,   // Days the consent cookie persists.
-				'retention_days'    => 365,   // Server-side record retention.
-				'store_records'     => true,
-				'consent_version'   => '1.0',
+			'consent'        => array(
+				'banner_enabled'     => true,
+				'cookie_expiry'      => 180,   // Days the consent cookie persists.
+				'retention_days'     => 365,   // Server-side record retention.
+				'store_records'      => true,
+				'consent_version'    => '1.0',
 				'reprompt_on_change' => true, // New consent version re-prompts visitors.
 			),
-			'categories'    => self::default_categories(),
-			'banner'        => array(
+			'categories'     => self::default_categories(),
+			'banner'         => array(
 				'position'          => 'bottom',      // bottom | top | bottom-left | bottom-right | center.
 				'layout'            => 'bar',          // bar | box.
 				'title'             => __( 'We value your privacy', 'consentguard' ),
@@ -90,44 +90,44 @@ class Settings {
 				'hide_in_admin'     => true,
 				'hide_in_elementor' => true,
 			),
-			'ga4'           => array(
+			'ga4'            => array(
 				'enabled'        => false,
 				'measurement_id' => '',
 				'category'       => 'analytics',
 				'anonymize_ip'   => true,
 			),
-			'consent_mode'  => array(
+			'consent_mode'   => array(
 				'enabled'            => true,
 				'ads_data_redaction' => true,
 				'url_passthrough'    => false,
 				'wait_for_update'    => 500,
 			),
-			'clarity'       => array(
+			'clarity'        => array(
 				'enabled'    => false,
 				'project_id' => '',
 				'category'   => 'analytics',
 			),
-			'cloudflare'    => array(
+			'cloudflare'     => array(
 				'enabled'         => false,
 				'token'           => '',
 				'category'        => 'analytics',
 				'require_consent' => true,
 			),
-			'gtm'           => array(
+			'gtm'            => array(
 				'enabled'      => false,
 				'container_id' => '',
 				'category'     => 'marketing',
 			),
 			'custom_scripts' => array(),
-			'cookies'       => self::default_cookie_inventory(),
-			'blocker'       => array(
+			'cookies'        => self::default_cookie_inventory(),
+			'blocker'        => array(
 				'enabled'        => true,
 				'domains'        => self::default_blocked_domains(),
 				'iframe_domains' => self::default_iframe_domains(),
 				'allowlist'      => array(),
 			),
-			'translations'  => array(), // locale => {banner: {...}, categories: {slug: {label, description}}}.
-			'jurisdictions' => array(
+			'translations'   => array(), // Per-locale banner/category text overrides.
+			'jurisdictions'  => array(
 				'geo_enabled'     => false,
 				'default_profile' => 'gdpr',
 				'rules'           => array(
@@ -136,24 +136,24 @@ class Settings {
 				),
 				'profiles'        => self::default_profiles(),
 			),
-			'dpdp'          => array(
-				'notice_text'     => '',
-				'purpose_text'    => '',
-				'rights_text'     => '',
-				'contact_email'   => '',
-				'grievance_info'  => '',
+			'dpdp'           => array(
+				'notice_text'    => '',
+				'purpose_text'   => '',
+				'rights_text'    => '',
+				'contact_email'  => '',
+				'grievance_info' => '',
 			),
-			'policies'      => array(
-				'privacy_page_id' => 0,
-				'cookie_page_id'  => 0,
-				'policy_version'  => '1.0',
+			'policies'       => array(
+				'privacy_page_id'         => 0,
+				'cookie_page_id'          => 0,
+				'policy_version'          => '1.0',
 				'generated_cookie_policy' => '',
 			),
-			'scanner'       => array(
+			'scanner'        => array(
 				'classifications' => array(), // domain => category, admin-defined for unknowns.
 				'last_scan'       => array(),
 			),
-			'advanced'      => array(
+			'advanced'       => array(
 				'debug'               => false,
 				'delete_on_uninstall' => false,
 				'respect_gpc'         => true,
@@ -369,15 +369,15 @@ class Settings {
 	/**
 	 * Gets a value via dot notation.
 	 *
-	 * @param string $key     Dot key, e.g. 'ga4.measurement_id'.
-	 * @param mixed  $default Fallback.
+	 * @param string $key      Dot key, e.g. 'ga4.measurement_id'.
+	 * @param mixed  $fallback Fallback.
 	 * @return mixed
 	 */
-	public function get( $key, $default = null ) {
+	public function get( $key, $fallback = null ) {
 		$value = $this->all();
 		foreach ( explode( '.', $key ) as $segment ) {
 			if ( ! is_array( $value ) || ! array_key_exists( $segment, $value ) ) {
-				return $default;
+				return $fallback;
 			}
 			$value = $value[ $segment ];
 		}
@@ -702,7 +702,7 @@ class Settings {
 		if ( isset( $input['translations'] ) && is_array( $input['translations'] ) ) {
 			$translations = array();
 			foreach ( $input['translations'] as $locale => $override ) {
-				// Valid WordPress locales only: "ta", "ta_IN", "zh_Hans_CN"…
+				// Valid WordPress locales only, e.g. "ta", "ta_IN", "zh_Hans_CN".
 				if ( ! is_array( $override ) || ! preg_match( '/^[a-z]{2,3}(_[A-Za-z]{2,10}){0,2}$/', (string) $locale ) ) {
 					continue;
 				}

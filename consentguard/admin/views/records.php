@@ -70,7 +70,8 @@ Admin::maybe_notice();
 
 <?php if ( $pcm_pages > 1 ) : ?>
 	<p>
-		<?php for ( $pcm_i = 1; $pcm_i <= min( $pcm_pages, 25 ); $pcm_i++ ) : ?>
+		<?php $pcm_last_page = min( $pcm_pages, 25 ); ?>
+		<?php for ( $pcm_i = 1; $pcm_i <= $pcm_last_page; $pcm_i++ ) : ?>
 			<?php if ( $pcm_i === $pcm_page ) : ?>
 				<strong><?php echo esc_html( $pcm_i ); ?></strong>
 			<?php else : ?>

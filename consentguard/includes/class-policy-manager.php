@@ -32,33 +32,33 @@ class Policy_Manager {
 		$services = array();
 		if ( pcm_get_setting( 'ga4.enabled' ) && pcm_get_setting( 'ga4.measurement_id' ) ) {
 			$services[] = array(
-				'name'    => __( 'Google Analytics 4', 'consentguard' ),
-				'purpose' => __( 'Measures website usage and visitor behaviour in aggregate.', 'consentguard' ),
-				'vendor'  => 'Google LLC',
+				'name'     => __( 'Google Analytics 4', 'consentguard' ),
+				'purpose'  => __( 'Measures website usage and visitor behaviour in aggregate.', 'consentguard' ),
+				'vendor'   => 'Google LLC',
 				'category' => pcm_get_setting( 'ga4.category', 'analytics' ),
 			);
 		}
 		if ( pcm_get_setting( 'clarity.enabled' ) && pcm_get_setting( 'clarity.project_id' ) ) {
 			$services[] = array(
-				'name'    => __( 'Microsoft Clarity', 'consentguard' ),
-				'purpose' => __( 'Session replays and heatmaps to understand how the site is used.', 'consentguard' ),
-				'vendor'  => 'Microsoft Corporation',
+				'name'     => __( 'Microsoft Clarity', 'consentguard' ),
+				'purpose'  => __( 'Session replays and heatmaps to understand how the site is used.', 'consentguard' ),
+				'vendor'   => 'Microsoft Corporation',
 				'category' => pcm_get_setting( 'clarity.category', 'analytics' ),
 			);
 		}
 		if ( pcm_get_setting( 'cloudflare.enabled' ) && pcm_get_setting( 'cloudflare.token' ) ) {
 			$services[] = array(
-				'name'    => __( 'Cloudflare Web Analytics', 'consentguard' ),
-				'purpose' => __( 'Privacy-first, cookieless website analytics.', 'consentguard' ),
-				'vendor'  => 'Cloudflare, Inc.',
+				'name'     => __( 'Cloudflare Web Analytics', 'consentguard' ),
+				'purpose'  => __( 'Privacy-first, cookieless website analytics.', 'consentguard' ),
+				'vendor'   => 'Cloudflare, Inc.',
 				'category' => pcm_get_setting( 'cloudflare.category', 'analytics' ),
 			);
 		}
 		if ( pcm_get_setting( 'gtm.enabled' ) && pcm_get_setting( 'gtm.container_id' ) ) {
 			$services[] = array(
-				'name'    => __( 'Google Tag Manager', 'consentguard' ),
-				'purpose' => __( 'Manages and loads additional tags and scripts.', 'consentguard' ),
-				'vendor'  => 'Google LLC',
+				'name'     => __( 'Google Tag Manager', 'consentguard' ),
+				'purpose'  => __( 'Manages and loads additional tags and scripts.', 'consentguard' ),
+				'vendor'   => 'Google LLC',
 				'category' => pcm_get_setting( 'gtm.category', 'marketing' ),
 			);
 		}

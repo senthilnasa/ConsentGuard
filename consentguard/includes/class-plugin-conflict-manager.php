@@ -80,10 +80,10 @@ class Plugin_Conflict_Manager {
 			'meta_pixel' => $this->has_custom_script_signature( 'connect.facebook.net' ),
 		);
 
-		$ignored    = (array) get_option( self::IGNORED_OPTION, array() );
-		$mitigated  = (array) get_option( self::MITIGATIONS_OPTION, array() );
-		$labels     = self::service_labels();
-		$conflicts  = array();
+		$ignored   = (array) get_option( self::IGNORED_OPTION, array() );
+		$mitigated = (array) get_option( self::MITIGATIONS_OPTION, array() );
+		$labels    = self::service_labels();
+		$conflicts = array();
 
 		foreach ( $this->detector->detect_active() as $basename => $plugin ) {
 			foreach ( $plugin['services'] as $service ) {
@@ -149,16 +149,16 @@ class Plugin_Conflict_Manager {
 	public function mitigation_supported( $slug, $service ) {
 		$supported = array(
 			// Site Kit documents googlesitekit_{module}_tag_blocked filters.
-			'site-kit:ga4'             => true,
-			'site-kit:gtm'             => true,
+			'site-kit:ga4'              => true,
+			'site-kit:gtm'              => true,
 			// The official Clarity plugin prints via wp_head; we can detect
 			// and suppress the duplicate client-side, but there is no
 			// supported server-side switch — treat as manual.
 			'microsoft-clarity:clarity' => false,
-			'cloudflare:cloudflare'    => false,
+			'cloudflare:cloudflare'     => false,
 		);
-		$key = $slug . ':' . $service;
-		$default = isset( $supported[ $key ] ) ? $supported[ $key ] : false;
+		$key       = $slug . ':' . $service;
+		$default   = isset( $supported[ $key ] ) ? $supported[ $key ] : false;
 
 		/**
 		 * Filters whether a safe automatic mitigation exists for a conflict.

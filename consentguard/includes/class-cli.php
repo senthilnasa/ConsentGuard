@@ -57,13 +57,15 @@ class CLI {
 			\WP_CLI::error( $result->get_error_message() );
 		}
 		foreach ( $result['results'] as $service => $data ) {
-			\WP_CLI::log( sprintf(
-				'%s: %d instance(s), sources: %s%s',
-				$data['label'],
-				$data['instances'],
-				$data['sources'] ? implode( ', ', $data['sources'] ) : '-',
-				$data['duplicate'] ? '  [DUPLICATE]' : ''
-			) );
+			\WP_CLI::log(
+				sprintf(
+					'%s: %d instance(s), sources: %s%s',
+					$data['label'],
+					$data['instances'],
+					$data['sources'] ? implode( ', ', $data['sources'] ) : '-',
+					$data['duplicate'] ? '  [DUPLICATE]' : ''
+				)
+			);
 		}
 		\WP_CLI::success( 'Scan complete.' );
 	}
@@ -114,17 +116,18 @@ class CLI {
 		$page = 1;
 		$rows = 0;
 		do {
-			$batch = $storage->get_records( $page, 100 );
+			$batch       = $storage->get_records( $page, 100 );
+			$batch_count = count( $batch['items'] );
 			foreach ( $batch['items'] as $row ) {
 				$line = array();
 				foreach ( $columns as $column ) {
 					$line[] = isset( $row[ $column ] ) ? $row[ $column ] : '';
 				}
 				fputcsv( $handle, $line );
-				$rows++;
+				++$rows;
 			}
-			$page++;
-		} while ( count( $batch['items'] ) === 100 );
+			++$page;
+		} while ( 100 === $batch_count );
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 
 		if ( isset( $assoc_args['file'] ) ) {

@@ -32,12 +32,12 @@ define( 'PCM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
  *      PCM\Admin\Foo_Bar    -> admin/class-foo-bar.php
  */
 spl_autoload_register(
-	static function ( $class ) {
-		if ( 0 !== strpos( $class, 'PCM\\' ) ) {
+	static function ( $class_name ) {
+		if ( 0 !== strpos( $class_name, 'PCM\\' ) ) {
 			return;
 		}
 
-		$relative = substr( $class, 4 ); // Strip "PCM\".
+		$relative = substr( $class_name, 4 ); // Strip "PCM\".
 
 		// "public" is a reserved word, so the frontend class lives in
 		// public/class-public.php but is named PCM\Frontend.
@@ -47,8 +47,8 @@ spl_autoload_register(
 		}
 
 		$parts = explode( '\\', $relative );
-		$name     = array_pop( $parts );
-		$file     = 'class-' . str_replace( '_', '-', strtolower( $name ) ) . '.php';
+		$name  = array_pop( $parts );
+		$file  = 'class-' . str_replace( '_', '-', strtolower( $name ) ) . '.php';
 
 		$map = array(
 			''      => 'includes/',

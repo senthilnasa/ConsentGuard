@@ -248,7 +248,7 @@ class Rest_Api {
 				'type'       => $type,
 				'first_seen' => current_time( 'mysql', true ),
 			);
-			$added++;
+			++$added;
 		}
 		if ( $added > 0 ) {
 			// Bounded: keep at most 200 pending discoveries.

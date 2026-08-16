@@ -24,8 +24,8 @@ class Google_Analytics {
 	 * @return array
 	 */
 	public function status() {
-		$enabled    = (bool) pcm_get_setting( 'ga4.enabled', false );
-		$mid        = (string) pcm_get_setting( 'ga4.measurement_id', '' );
+		$enabled = (bool) pcm_get_setting( 'ga4.enabled', false );
+		$mid     = (string) pcm_get_setting( 'ga4.measurement_id', '' );
 		return array(
 			'enabled'    => $enabled,
 			'configured' => $enabled && '' !== $mid,
@@ -51,8 +51,8 @@ class Google_Analytics {
 
 		// Duplicate guard: window.__pcmGa4Loaded prevents double init even if
 		// another copy of the snippet exists on the page.
-		$config = "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}"
-			. "if(!window.__pcmGa4Loaded){window.__pcmGa4Loaded=true;"
+		$config = 'window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}'
+			. 'if(!window.__pcmGa4Loaded){window.__pcmGa4Loaded=true;'
 			. "gtag('js',new Date());"
 			. sprintf( "gtag('config',%s,{anonymize_ip:%s});", wp_json_encode( $mid ), pcm_get_setting( 'ga4.anonymize_ip', true ) ? 'true' : 'false' )
 			. '}';
