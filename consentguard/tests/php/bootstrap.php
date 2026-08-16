@@ -134,6 +134,7 @@ function wp_json_encode( $data, $options = 0, $depth = 512 ) {
 	return json_encode( $data, $options, $depth );
 }
 function wp_generate_uuid4() {
+	// phpcs:disable WordPress.WP.AlternativeFunctions.rand_mt_rand -- test shim; wp_rand() does not exist outside WordPress and no security property is needed here.
 	return sprintf(
 		'%04x%04x-%04x-4%03x-%04x-%04x%04x%04x',
 		mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
@@ -142,6 +143,7 @@ function wp_generate_uuid4() {
 		mt_rand( 0, 0x3fff ) | 0x8000,
 		mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
 	);
+	// phpcs:enable
 }
 function wp_is_uuid( $uuid, $version = null ) {
 	return is_string( $uuid ) && (bool) preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower( $uuid ) );
@@ -154,7 +156,7 @@ function wp_is_numeric_array( $data ) {
 	return $keys === array_filter( $keys, 'is_int' );
 }
 function wp_parse_url( $url, $component = -1 ) {
-	return parse_url( (string) $url, $component );
+	return parse_url( (string) $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- this IS the wp_parse_url test shim.
 }
 function current_time( $type, $gmt = 0 ) {
 	return 'mysql' === $type ? gmdate( 'Y-m-d H:i:s' ) : time();
@@ -201,7 +203,7 @@ function __( $text, $domain = 'default' ) {
 	return $text;
 }
 function _e( $text, $domain = 'default' ) {
-	echo $text;
+	echo $text; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- faithful test shim of WordPress core's _e().
 }
 function esc_html__( $text, $domain = 'default' ) {
 	return esc_html( $text );

@@ -85,10 +85,10 @@ class Consent_Storage {
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table name is trusted.
 		$items = $wpdb->get_results(
-			$wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", $per_page, $offset ),
+			$wpdb->prepare( 'SELECT * FROM %i ORDER BY id DESC LIMIT %d OFFSET %d', $table, $per_page, $offset ),
 			ARRAY_A
 		);
-		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+		$total = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table ) );
 		// phpcs:enable
 
 		return array(
@@ -112,14 +112,17 @@ class Consent_Storage {
 		global $wpdb;
 		$table = $this->table();
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$row = $wpdb->get_row(
-			"SELECT COUNT(*) AS total,
-				SUM(CASE WHEN functional = 1 AND analytics = 1 AND marketing = 1 AND preferences = 1 THEN 1 ELSE 0 END) AS accepted_all,
-				SUM(CASE WHEN functional = 0 AND analytics = 0 AND marketing = 0 AND preferences = 0 THEN 1 ELSE 0 END) AS rejected_all,
-				SUM(analytics) AS analytics_granted,
-				SUM(marketing) AS marketing_granted
-			FROM {$table}",
+			$wpdb->prepare(
+				'SELECT COUNT(*) AS total,
+					SUM(CASE WHEN functional = 1 AND analytics = 1 AND marketing = 1 AND preferences = 1 THEN 1 ELSE 0 END) AS accepted_all,
+					SUM(CASE WHEN functional = 0 AND analytics = 0 AND marketing = 0 AND preferences = 0 THEN 1 ELSE 0 END) AS rejected_all,
+					SUM(analytics) AS analytics_granted,
+					SUM(marketing) AS marketing_granted
+				FROM %i',
+				$table
+			),
 			ARRAY_A
 		);
 		// phpcs:enable
@@ -163,7 +166,8 @@ class Consent_Storage {
 					SUM(CASE WHEN action = 'accept_all' THEN 1 ELSE 0 END) AS accept_count,
 					SUM(CASE WHEN action IN ('reject_all','withdraw') THEN 1 ELSE 0 END) AS reject_count,
 					SUM(CASE WHEN action NOT IN ('accept_all','reject_all','withdraw') THEN 1 ELSE 0 END) AS custom_count
-				FROM {$table} WHERE created_at >= %s GROUP BY DATE(created_at) ORDER BY day ASC",
+				FROM %i WHERE created_at >= %s GROUP BY DATE(created_at) ORDER BY day ASC",
+				$table,
 				$cutoff
 			),
 			ARRAY_A
@@ -213,7 +217,7 @@ class Consent_Storage {
 		do {
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$batch = (int) $wpdb->query(
-				$wpdb->prepare( "DELETE FROM {$table} WHERE created_at < %s LIMIT 1000", $cutoff )
+				$wpdb->prepare( 'DELETE FROM %i WHERE created_at < %s LIMIT 1000', $table, $cutoff )
 			);
 			// phpcs:enable
 			$deleted += $batch;
@@ -246,7 +250,8 @@ class Consent_Storage {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE consent_id = %s OR anonymous_id = %s ORDER BY id DESC LIMIT 1",
+				'SELECT * FROM %i WHERE consent_id = %s OR anonymous_id = %s ORDER BY id DESC LIMIT 1',
+				$table,
 				$uuid,
 				$uuid
 			),
@@ -268,7 +273,7 @@ class Consent_Storage {
 		$table = $this->table();
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$deleted = (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM {$table} WHERE consent_id = %s OR anonymous_id = %s", $uuid, $uuid )
+			$wpdb->prepare( 'DELETE FROM %i WHERE consent_id = %s OR anonymous_id = %s', $table, $uuid, $uuid )
 		);
 		// phpcs:enable
 		if ( $deleted > 0 ) {
@@ -288,7 +293,7 @@ class Consent_Storage {
 		$table = $this->table();
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM {$table} WHERE anonymous_id = %s", $anonymous_id )
+			$wpdb->prepare( 'DELETE FROM %i WHERE anonymous_id = %s', $table, $anonymous_id )
 		);
 		// phpcs:enable
 	}

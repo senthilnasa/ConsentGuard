@@ -9,7 +9,7 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Centralized privacy, consent, analytics and tracking management. One consent decision controls GA4, Consent Mode v2, Clarity, Cloudflare Analytics, GTM and custom scripts — and duplicate tracking from other plugins is detected.
+Self-hosted consent manager: one decision controls GA4, Consent Mode v2, Clarity, GTM, embeds and custom scripts. Detects duplicate trackers.
 
 == Description ==
 

@@ -88,6 +88,7 @@ class Script_Manager {
 				? sprintf( ' data-pcm-attr-%s', esc_attr( $name ) )
 				: sprintf( ' data-pcm-attr-%s="%s"', esc_attr( $name ), esc_attr( $value ) );
 		}
+		// phpcs:disable WordPress.WP.EnqueuedResources.NonEnqueuedScript -- deliberately NOT enqueued: this is an inert consent-blocked template (type="text/plain", src stashed in data-pcm-src) that the browser ignores until the visitor grants the category; wp_enqueue_script() cannot express consent-gated execution.
 		return sprintf(
 			'<script type="text/plain" data-pcm-managed="1" data-pcm-id="%s" data-pcm-category="%s" data-pcm-src="%s"%s></script>' . "\n",
 			esc_attr( $script_id ),
@@ -95,5 +96,6 @@ class Script_Manager {
 			esc_url( $src ),
 			$attrs
 		);
+		// phpcs:enable WordPress.WP.EnqueuedResources.NonEnqueuedScript
 	}
 }

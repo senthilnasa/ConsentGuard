@@ -51,8 +51,9 @@ final class Plugin {
 	 * Instantiates modules and registers hooks.
 	 */
 	private function boot() {
-		load_plugin_textdomain( 'consentguard', false, dirname( PCM_PLUGIN_BASENAME ) . '/languages' );
-
+		// Translations load automatically since WP 4.6 (just-in-time, from
+		// translate.wordpress.org / wp-content/languages/plugins) — no
+		// load_plugin_textdomain() call needed for a wp.org-hosted plugin.
 		$settings = Settings::instance();
 		$storage  = new Consent_Storage();
 

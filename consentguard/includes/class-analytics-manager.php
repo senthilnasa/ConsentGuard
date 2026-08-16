@@ -38,6 +38,9 @@ class Analytics_Manager {
 			return;
 		}
 
+		// Consent-exempt Cloudflare beacon uses the standard enqueue API.
+		$this->integrations['cloudflare']->register_hooks();
+
 		// Consent Mode defaults must print before anything Google-related.
 		add_action( 'wp_head', array( $this->integrations['consent_mode'], 'print_defaults' ), 1 );
 
